@@ -2,14 +2,13 @@
 
 from .base import Base
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
-from typing import TYPE_CHECKING, Optional
-if TYPE_CHECKING:
-    from .user import User
+from typing import Optional
 from datetime import datetime
 
 
-class Deal (Base):
+class Deal(Base):
     __tablename__ = "deal"
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
@@ -23,10 +22,10 @@ class Deal (Base):
     to_name: Mapped[str]
     to_image_xml: Mapped[str]
     status: Mapped[str]
-    accepted_by: Mapped[Optional['User']]
-    accepted_at: Mapped[datetime]
-    received_at: Mapped[datetime]
+    accepted_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    accepted_at: Mapped[Optional[datetime]]
+    received_at: Mapped[Optional[datetime]]
     created_at: Mapped[datetime]
-    updated_at: Mapped[datetime]
+    updated_at: Mapped[Optional[datetime]]
 
 

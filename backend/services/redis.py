@@ -11,10 +11,11 @@ class RedisService:
     def __init__(self, client: Redis) -> None:
         self._client = client
 
-    async def publish_deal(self, deal_id: int, data: dict) -> None:
+    async def publish_deal(self, deal_id: int, data: dict, from_xml: str) -> None:
         await self._client.publish("deals", json.dumps({
             "event": "new_deal",
             "deal_id": deal_id,
+            "from_xml": from_xml,
             "data": data
         }))
 
@@ -24,4 +25,5 @@ class RedisService:
 
         async for message in pubsub.listen():
             if message["type"] == "message":
-                await manager.broadcast(message["data"])
+                payload = json.loads(message["data"])
+                await manager.broadcast_to_matching(message["data"], payload["from_xml"])

@@ -1,4 +1,6 @@
+from decimal import Decimal
 from .base import Base, user_currencies_table
+from sqlalchemy import Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING, List
 
@@ -12,6 +14,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
     username: Mapped[str] = mapped_column(unique=True)
     hashed_password: Mapped[str]
+    balance: Mapped[Decimal] = mapped_column(Numeric(18, 2), server_default="0")
 
     currencies: Mapped[List['Currency']] = relationship(
         secondary=user_currencies_table,
