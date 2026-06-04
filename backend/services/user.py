@@ -25,3 +25,15 @@ class UserService:
         if not user or not pwd_context.verify(password, user.hashed_password):
             return None
         return user
+
+    async def set_active(self, user: User, is_active: bool) -> User:
+        user.is_active = is_active
+        await self.repository.session.commit()
+        await self.repository.session.refresh(user)
+        return user
+
+    async def update_currencies(self, user: User, xml_codes: list[str]) -> User:
+        await self.repository.set_currencies(user, xml_codes)
+        await self.repository.session.commit()
+        await self.repository.session.refresh(user)
+        return user

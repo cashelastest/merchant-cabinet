@@ -1,0 +1,219 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #1e1e1e;
+  border-bottom: 1px solid #1a1a1a;
+  padding: 0 16px;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  min-width: 100px;
+}
+
+.logo {
+  height: 28px;
+  width: auto;
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.btnDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.btnEnd {
+  background-color: #2d1a1a;
+  border-color: #4d2626;
+  color: #f87171;
+}
+.btnEnd:hover { background-color: #3d2020; }
+
+.btnPause {
+  background-color: #2d2a1a;
+  border-color: #4d4026;
+  color: #fbbf24;
+}
+.btnPause:hover { background-color: #3d381f; }
+
+.btnResume {
+  background-color: #1a2d1a;
+  border-color: #264d26;
+  color: #4ade80;
+}
+.btnResume:hover { background-color: #1f3a1f; }
+
+.btnPayout {
+  background-color: #1a2d1a;
+  border-color: #264d26;
+  color: #4ade80;
+}
+.btnPayout:hover { background-color: #1f3a1f; }
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.statusChip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.statusActive {
+  background-color: #1a4d1a;
+  color: #4ade80;
+  border: 1px solid #264d26;
+}
+
+.statusPaused {
+  background-color: #4d4026;
+  color: #fbbf24;
+  border: 1px solid #6d5830;
+}
+
+.currenciesBtn {
+  padding: 4px 12px;
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  color: #a0a0a0;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.currenciesBtn:hover {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  border-color: #3a3a3a;
+}
+
+.balance {
+  font-size: 13px;
+  color: #d4d4d4;
+  white-space: nowrap;
+}
+
+.refreshBtn {
+  padding: 5px 12px;
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #a0a0a0;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+.refreshBtn:hover {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  border-color: #3a3a3a;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 28px 32px;
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modalTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e0e0e0;
+}
+
+.modalHint {
+  font-size: 12px;
+  color: #808080;
+  line-height: 1.5;
+}
+
+.modalInput {
+  padding: 10px 12px;
+  background-color: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.modalInput:focus { border-color: #4a4a4a; }
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modalCancel {
+  padding: 8px 18px;
+  background-color: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  color: #808080;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+.modalCancel:hover { background-color: #2a2a2a; color: #e0e0e0; }
+
+.modalSave {
+  padding: 8px 18px;
+  background-color: #1a3a1a;
+  border: 1px solid #264d26;
+  border-radius: 4px;
+  color: #4ade80;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.modalSave:hover:not(:disabled) { background-color: #1f4d1f; }
+.modalSave:disabled { opacity: 0.5; cursor: not-allowed; }

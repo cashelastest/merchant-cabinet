@@ -1,0 +1,135 @@
+.formBlock {
+  width: 400px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e0e0e0;
+  margin-bottom: 8px;
+}
+
+.formInputs {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  color: #d4d4d4;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.formInputBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formInput {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: #1e1e1e;
+  border: 1px solid #2b2b2b;
+  border-radius: 4px;
+  color: #d4d4d4;
+  font-size: 14px;
+  outline: none;
+  font-weight: 400;
+  transition: all 0.2s ease;
+}
+
+.formInput:focus {
+  border-color: #555454;
+  background-color: hsl(0, 0%, 15%);
+}
+
+.formInput::placeholder {
+  color: #5a5a5a;
+}
+
+.authLinkBlock {
+  text-align: center;
+  margin-top: 10px;
+  color: #a0a0a0;
+  font-size: 14px;
+}
+
+.authLink {
+  color: #d4d4d4;
+  text-decoration: none;
+  font-weight: 700;
+  transition: color 0.2s ease;
+}
+
+.authLink:hover {
+  color: #ffffff;
+}
+
+.buttonWrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.submitButton {
+  padding: 12px 24px;
+  background-color: #2d2d2d;
+  border: 1px solid #3d3d3d;
+  border-radius: 4px;
+  color: #d4d4d4;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.submitButton:hover {
+  background-color: #3a3a3a;
+  border-color: #4d4d4d;
+}
+
+.submitButton:active {
+  background-color: #252525;
+  transform: translateY(1px);
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submitButton.loading {
+  color: transparent;
+}
+
+.submitButton.loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid #d4d4d4;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spinner 0.6s linear infinite;
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}
+
+.error {
+  padding: 10px 12px;
+  background-color: #2d1a1a;
+  border: 1px solid #4d2626;
+  border-radius: 4px;
+  color: #ff6b6b;
+  font-size: 14px;
+}

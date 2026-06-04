@@ -3,11 +3,19 @@
 import jwt
 from datetime import datetime, timedelta, UTC
 from fastapi import APIRouter, Depends, HTTPException
+from decimal import Decimal
+from pydantic import BaseModel
 
 from core.config import SECRET_KEY
-from core.dependencies import get_user_service
+from core.dependencies import get_user_service, get_current_user
 from services.user import UserService
 from schemas import CreateUserRequest, TokenResponse
+from models import User
+
+
+class StatusUpdate(BaseModel):
+    is_active: bool
+
 
 router = APIRouter(prefix="/auth")
 
@@ -29,3 +37,28 @@ async def login(data: CreateUserRequest, service: UserService = Depends(get_user
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return TokenResponse(access_token=_create_token(user.id))
+
+
+@router.get("/me")
+async def me(user: User = Depends(get_current_user)):
+    return {
+        "id": user.id,
+        "username": user.username,
+        "balance": float(user.balance) if isinstance(user.balance, Decimal) else user.balance,
+        "is_active": user.is_active,
+        "currencies": [c.xml for c in user.currencies],
+    }
+
+
+@router.patch("/me/status")
+async def update_status(
+    data: StatusUpdate,
+    user: User = Depends(get_current_user),
+    service: UserService = Depends(get_user_service),
+):
+    updated = await service.set_active(user, data.is_active)
+    return {
+        "id": updated.id,
+        "username": updated.username,
+        "is_active": updated.is_active,
+    }
