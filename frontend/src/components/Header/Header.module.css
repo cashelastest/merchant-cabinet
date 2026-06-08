@@ -47,6 +47,13 @@
   flex-shrink: 0;
 }
 
+.btnStart {
+  background-color: #1a2d1a;
+  border-color: #264d26;
+  color: #4ade80;
+}
+.btnStart:hover { background-color: #1f3a1f; }
+
 .btnEnd {
   background-color: #2d1a1a;
   border-color: #4d2626;
@@ -140,6 +147,19 @@
   background-color: #2a2a2a;
   color: #e0e0e0;
   border-color: #3a3a3a;
+}
+
+.logoutBtn {
+  padding: 5px 10px;
+  background-color: transparent;
+  border: 1px solid #3f1a1a;
+  border-radius: 6px;
+  color: #ef4444;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+.logoutBtn:hover {
+  background-color: #1f0a0a;
 }
 
 /* Modal */

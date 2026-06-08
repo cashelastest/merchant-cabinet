@@ -10,7 +10,16 @@ export interface Deal {
   id: number;
   uid: number;
   secret: string;
-  to_values: Record<string, unknown>;
+  to_values: {
+    outAmount?: number;
+    cardHolder?: string;
+    cardNumber?: string;
+    phoneNumber?: string;
+    bankName?: string;
+    country?: string;
+    usdtWallet?: string;
+    [key: string]: unknown;
+  };
   from_xml: string;
   from_name: string;
   from_image_url: string;

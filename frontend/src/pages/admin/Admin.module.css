@@ -1,0 +1,359 @@
+.loginPage {
+  min-height: 100vh;
+  background: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loginCard {
+  background: #141414;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 40px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.loginTitle {
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---------- layout ---------- */
+
+.page {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  padding: 0 0 40px;
+}
+
+.topbar {
+  background: #111;
+  border-bottom: 1px solid #222;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pageTitle {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.topbarActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ---------- filters ---------- */
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 16px 28px;
+  background: #111;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #aaa;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  accent-color: #3b82f6;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.dateInput {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 7px;
+  padding: 7px 12px;
+  color: #e0e0e0;
+  font-size: 13px;
+  outline: none;
+}
+
+.dateInput:disabled {
+  opacity: 0.4;
+}
+
+.dateInput:focus {
+  border-color: #3b82f6;
+}
+
+.dateSep {
+  color: #555;
+  font-size: 13px;
+}
+
+.filterSelect {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 7px;
+  padding: 7px 12px;
+  color: #e0e0e0;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+.filterSelect:focus {
+  border-color: #3b82f6;
+}
+
+/* ---------- summary ---------- */
+
+.summary {
+  display: flex;
+  gap: 28px;
+  padding: 12px 28px;
+  font-size: 13px;
+  color: #888;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.summary strong {
+  color: #e0e0e0;
+}
+
+/* ---------- table ---------- */
+
+.tableWrapper {
+  overflow-x: auto;
+  padding: 20px 28px 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th {
+  text-align: left;
+  color: #555;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 12px;
+  border-bottom: 1px solid #1e1e1e;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #1a1a1a;
+  color: #ccc;
+  white-space: nowrap;
+}
+
+.table tbody tr:hover {
+  background: #141414;
+}
+
+/* ---------- inputs ---------- */
+
+.input {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #e0e0e0;
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: #3b82f6;
+}
+
+.currencyInput {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 7px;
+  padding: 6px 10px;
+  color: #e0e0e0;
+  font-size: 13px;
+  outline: none;
+  width: 180px;
+}
+
+.currencyInput:focus {
+  border-color: #3b82f6;
+}
+
+/* ---------- buttons ---------- */
+
+.submitBtn {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 11px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.saveBtn {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.savedBtn {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.navBtn {
+  background: #1e1e1e;
+  color: #ccc;
+  border: 1px solid #2a2a2a;
+  border-radius: 7px;
+  padding: 7px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.navBtn:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.logoutBtn {
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #3f1a1a;
+  border-radius: 7px;
+  padding: 7px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.logoutBtn:hover {
+  background: #1f0a0a;
+}
+
+/* ---------- badges ---------- */
+
+.badgeActive {
+  background: #052e16;
+  color: #4ade80;
+  border: 1px solid #166534;
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badgePaused {
+  background: #1c1917;
+  color: #f87171;
+  border: 1px solid #7f1d1d;
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badgeAdmin {
+  background: #1e1b4b;
+  color: #a5b4fc;
+  border: 1px solid #3730a3;
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badgeUser {
+  background: #1a1a1a;
+  color: #9ca3af;
+  border: 1px solid #374151;
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ---------- misc ---------- */
+
+.error {
+  background: #1f0a0a;
+  color: #f87171;
+  border: 1px solid #7f1d1d;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin: 16px 28px;
+}
+
+.empty {
+  text-align: center;
+  color: #555;
+  padding: 60px 0;
+  font-size: 14px;
+}

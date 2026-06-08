@@ -5,22 +5,35 @@ import { setMyStatus, updateMyCurrencies } from '../../api/auth';
 
 export default function Header() {
   const { user, logout, refreshUser } = useAuth();
-  const isActive = user?.is_active ?? true;
+  const isActive = user?.is_active ?? false;
 
+  const [isPaused, setIsPaused] = useState(false);
   const [showCurrencies, setShowCurrencies] = useState(false);
   const [currencyInput, setCurrencyInput] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const handleToggleActive = async () => {
+  const handleStart = async () => {
     try {
-      await setMyStatus(!isActive);
+      await setMyStatus(true);
       await refreshUser();
-      window.dispatchEvent(new CustomEvent('session:status', { detail: { is_active: !isActive } }));
+      setIsPaused(false);
+      window.dispatchEvent(new CustomEvent('session:status', { detail: { is_active: true } }));
     } catch {/* ignore */}
   };
 
-  const handleEnd = () => {
-    if (confirm('Завершить сессию и выйти?')) logout();
+  const handleEnd = async () => {
+    try {
+      await setMyStatus(false);
+      await refreshUser();
+      setIsPaused(false);
+      window.dispatchEvent(new CustomEvent('session:status', { detail: { is_active: false } }));
+    } catch {/* ignore */}
+  };
+
+  const handlePause = () => {
+    const next = !isPaused;
+    setIsPaused(next);
+    window.dispatchEvent(new CustomEvent('session:status', { detail: { is_active: !next } }));
   };
 
   const handleRefresh = async () => {
@@ -43,7 +56,6 @@ export default function Header() {
       await updateMyCurrencies(list);
       await refreshUser();
       setShowCurrencies(false);
-      // update WS connection currencies without reconnecting
       window.dispatchEvent(new CustomEvent('ws:update_currencies', { detail: { currencies: list } }));
       window.dispatchEvent(new CustomEvent('deals:refresh'));
     } finally {
@@ -59,33 +71,40 @@ export default function Header() {
         </div>
 
         <div className={styles.center}>
-          <button className={`${styles.btn} ${styles.btnEnd}`} onClick={handleEnd}>
-            <span className={styles.btnDot} style={{ background: '#ef4444' }} />
-            End
-          </button>
-          <button
-            className={`${styles.btn} ${isActive ? styles.btnPause : styles.btnResume}`}
-            onClick={handleToggleActive}
-          >
-            <span className={styles.btnDot} style={{ background: isActive ? '#fbbf24' : '#4ade80' }} />
-            {isActive ? 'Pause' : 'Resume'}
-          </button>
-          <button className={`${styles.btn} ${styles.btnPayout}`} onClick={() => alert('Вывод инициирован')}>
-            <span className={styles.btnDot} style={{ background: '#4ade80' }} />
-            Payout
-          </button>
+          {!isActive ? (
+            <button className={`${styles.btn} ${styles.btnStart}`} onClick={handleStart}>
+              <span className={styles.btnDot} style={{ background: '#4ade80' }} />
+              Start
+            </button>
+          ) : (
+            <>
+              <button className={`${styles.btn} ${styles.btnEnd}`} onClick={handleEnd}>
+                <span className={styles.btnDot} style={{ background: '#ef4444' }} />
+                End
+              </button>
+              <button
+                className={`${styles.btn} ${isPaused ? styles.btnResume : styles.btnPause}`}
+                onClick={handlePause}
+              >
+                <span className={styles.btnDot} style={{ background: isPaused ? '#4ade80' : '#fbbf24' }} />
+                {isPaused ? 'Resume' : 'Pause'}
+              </button>
+              <button className={`${styles.btn} ${styles.btnPayout}`} onClick={() => alert('Payout initiated')}>
+                <span className={styles.btnDot} style={{ background: '#4ade80' }} />
+                Payout
+              </button>
+            </>
+          )}
         </div>
 
         <div className={styles.right}>
           {user && (
             <>
-              <span className={`${styles.statusChip} ${isActive ? styles.statusActive : styles.statusPaused}`}>
-                {isActive ? 'Active' : 'Paused'}
+              <span className={`${styles.statusChip} ${isActive && !isPaused ? styles.statusActive : styles.statusPaused}`}>
+                {!isActive ? 'Inactive' : isPaused ? 'Paused' : 'Active'}
               </span>
               <button className={styles.currenciesBtn} onClick={openCurrencies} title="Currencies">
-                {user.currencies.length > 0
-                  ? user.currencies.join(', ')
-                  : '+ Currencies'}
+                {user.currencies.length > 0 ? user.currencies.join(', ') : '+ Currencies'}
               </button>
               <span className={styles.balance}>
                 {user.username}: {Number(user.balance).toFixed(2)}
@@ -93,6 +112,7 @@ export default function Header() {
             </>
           )}
           <button className={styles.refreshBtn} onClick={handleRefresh}>↻ Refresh</button>
+          <button className={styles.logoutBtn} onClick={logout} title="Logout">⎋</button>
         </div>
       </div>
 

@@ -1,11 +1,15 @@
 """Admin router — only accessible to admin users."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import date, datetime, timedelta
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.dependencies import get_user_service, require_admin
+from core.dependencies import get_user_service, require_admin, get_session
 from services.user import UserService
-from models import User
+from models import User, Deal
 
 
 class CurrenciesUpdate(BaseModel):
@@ -49,3 +53,49 @@ async def set_user_currencies(
         "username": updated.username,
         "currencies": [c.xml for c in updated.currencies],
     }
+
+
+@router.get("/deals")
+async def list_deals(
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
+    today: bool = Query(False),
+    status: Optional[str] = Query(None),
+):
+    query = select(Deal).order_by(Deal.accepted_at.desc())
+
+    if today:
+        start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        query = query.where(Deal.accepted_at >= start)
+    else:
+        if date_from:
+            query = query.where(Deal.accepted_at >= datetime.combine(date_from, datetime.min.time()))
+        if date_to:
+            query = query.where(Deal.accepted_at < datetime.combine(date_to + timedelta(days=1), datetime.min.time()))
+
+    if status:
+        query = query.where(Deal.status == status)
+    else:
+        query = query.where(Deal.status.in_(["accepted", "refused"]))
+
+    result = await session.execute(query)
+    deals = result.scalars().all()
+
+    return [
+        {
+            "id": d.id,
+            "uid": d.uid,
+            "from_xml": d.from_xml,
+            "from_name": d.from_name,
+            "to_name": d.to_name,
+            "to_values": d.to_values,
+            "status": d.status,
+            "accepted_by": d.accepted_by,
+            "accepted_at": d.accepted_at.isoformat() if d.accepted_at else None,
+            "received_at": d.received_at.isoformat() if d.received_at else None,
+            "created_at": d.created_at.isoformat(),
+        }
+        for d in deals
+    ]
