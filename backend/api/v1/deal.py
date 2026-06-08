@@ -28,7 +28,6 @@ async def list_deals(
 async def create_deal(
     data: DealCreateRequest,
     service: DealService = Depends(get_deal_service),
-    _: User = Depends(get_current_user),
 ):
     deal = await service.create(data)
 
@@ -46,10 +45,9 @@ async def create_deal(
         "data": deal_data,
     })
 
-    # Direct broadcast — надёжно, не зависит от Redis
+    # Broadcast to matching merchants and all admins
     await manager.broadcast_to_matching(ws_message, data.from_xml)
 
-    # Redis — для внешних систем / multi-instance (игнорируем ошибки)
     try:
         await redis_service.publish_deal(deal.id, deal_data, data.from_xml)
     except Exception:
@@ -90,7 +88,7 @@ async def deals_ws(
     user: User = Depends(get_current_user_ws),
 ) -> None:
     xml_codes = {c.xml for c in user.currencies}
-    await manager.connect(websocket, xml_codes, is_active=user.is_active)
+    await manager.connect(websocket, xml_codes, is_active=user.is_active, is_admin=user.is_admin)
 
     try:
         while True:

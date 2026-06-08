@@ -1,10 +1,8 @@
-from passlib.context import CryptContext
+import bcrypt
 
 from repositories import UserRepository
 from models import User
 from schemas import CreateUserRequest
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserService:
@@ -12,17 +10,15 @@ class UserService:
         self.repository = repository
 
     async def create_user(self, data: CreateUserRequest) -> User:
-        user = User(
-            username=data.username,
-            hashed_password=pwd_context.hash(data.password),
-        )
+        hashed = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
+        user = User(username=data.username, hashed_password=hashed)
         await self.repository.save(user)
         await self.repository.session.commit()
         return user
 
     async def authenticate(self, username: str, password: str) -> User | None:
         user = await self.repository.get_by_username(username)
-        if not user or not pwd_context.verify(password, user.hashed_password):
+        if not user or not bcrypt.checkpw(password.encode(), user.hashed_password.encode()):
             return None
         return user
 
