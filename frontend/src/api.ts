@@ -30,13 +30,13 @@ export async function login(username: string, password: string): Promise<string>
   return access_token
 }
 
-export async function register(username: string, password: string): Promise<string> {
+export async function register(username: string, password: string, api_key: string, secret: string): Promise<string> {
   let res: Response
   try {
     res = await fetch(`${BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, api_key, secret }),
     })
   } catch {
     throw new Error('Cannot connect to server')

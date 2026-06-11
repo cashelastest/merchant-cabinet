@@ -179,63 +179,69 @@
 .actionsCell {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 120px;
+  gap: 5px;
+  min-width: 110px;
 }
 
-.actionBtn {
-  padding: 6px 10px;
-  background-color: #1a1a1a;
-  border: 1px solid #2a2a2a;
+.btnAccept {
+  padding: 6px 14px;
+  background-color: #1a3a60;
+  border: 1px solid #2563eb;
   border-radius: 6px;
-  color: #a0a0a0;
-  font-size: 15px;
-  font-weight: bold;
+  color: #60a5fa;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
   transition: all 0.2s ease;
-  align-self: flex-start;
-  width: 36px;
   text-align: center;
 }
+.btnAccept:hover:not(:disabled) { background-color: #1e4a80; color: #93c5fd; }
+.btnAccept:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.actionBtnActive {
-  background-color: #1a3a60;
-  border-color: #2563eb;
-  color: #60a5fa;
-}
-
-.actionBtnActive:hover:not(:disabled) {
-  background-color: #1e4a80;
-  border-color: #3b82f6;
-  color: #93c5fd;
-}
-
-.actionBtn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.refuseBtn {
-  padding: 5px 10px;
+.btnRefuse {
+  padding: 6px 14px;
   background-color: #1e1e1e;
   border: 1px solid #2a2a2a;
-  border-radius: 4px;
+  border-radius: 6px;
   color: #808080;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
   transition: all 0.2s ease;
+  text-align: center;
 }
+.btnRefuse:hover:not(:disabled) { background-color: #2d1a1a; border-color: #4d2626; color: #f87171; }
+.btnRefuse:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.refuseBtn:hover:not(:disabled) {
+.btnComplete {
+  padding: 6px 14px;
+  background-color: #1a4d1a;
+  border: 1px solid #264d26;
+  border-radius: 6px;
+  color: #4ade80;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+.btnComplete:hover:not(:disabled) { background-color: #1f6b1f; }
+.btnComplete:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btnCancel {
+  padding: 6px 14px;
   background-color: #2d1a1a;
-  border-color: #4d2626;
+  border: 1px solid #4d2626;
+  border-radius: 6px;
   color: #f87171;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  text-align: center;
 }
-
-.refuseBtn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
+.btnCancel:hover:not(:disabled) { background-color: #3d2020; }
+.btnCancel:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* Timer cell */
 .timerCell {

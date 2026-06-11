@@ -8,3 +8,5 @@ REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis:6379")
 SECRET_KEY: str = os.getenv("SECRET_KEY", "change-me-in-production")
 ADMIN_USERNAME: str = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin")
+BPAY_URL: str = os.getenv("BPAY_URL", "https://bpay-processing.com")
+BIZON_PUBLIC_URL: str = "https://www.exchange-bizon.com/service/api/v1/public/exchanger"

@@ -82,6 +82,19 @@ async def refuse_deal(
     return {"id": deal.id, "status": deal.status}
 
 
+@router.post("/deal/{deal_id}/complete")
+async def complete_deal(
+    deal_id: int,
+    service: DealService = Depends(get_deal_service),
+    user: User = Depends(get_current_user),
+):
+    try:
+        deal = await service.complete(deal_id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404 if str(e) == "not_found" else 409)
+    return {"id": deal.id, "status": deal.status}
+
+
 @router.websocket("/ws/deals")
 async def deals_ws(
     websocket: WebSocket,

@@ -14,6 +14,8 @@ class User(Base):
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
     username: Mapped[str] = mapped_column(unique=True)
     hashed_password: Mapped[str]
+    api_key: Mapped[str]
+    secret: Mapped[str]
     balance: Mapped[Decimal] = mapped_column(Numeric(18, 2), server_default="0")
     is_active: Mapped[bool] = mapped_column(server_default="true")
     is_admin: Mapped[bool] = mapped_column(server_default="false")

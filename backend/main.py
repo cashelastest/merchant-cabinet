@@ -13,6 +13,7 @@ from schemas import CreateUserRequest
 from api.v1.deal import router as deal_router
 from api.v1.auth import router as auth_router
 from api.v1.admin import router as admin_router
+from api.v1.payout import router as payout_router
 
 
 async def _ensure_admin() -> None:
@@ -20,7 +21,7 @@ async def _ensure_admin() -> None:
         repo = UserRepository(session)
         existing = await repo.get_by_username(ADMIN_USERNAME)
         if not existing:
-            data = CreateUserRequest(username=ADMIN_USERNAME, password=ADMIN_PASSWORD)
+            data = CreateUserRequest(username=ADMIN_USERNAME, password=ADMIN_PASSWORD, api_key="", secret="")
             service = UserService(repo)
             user = await service.create_user(data)
             user.is_admin = True
@@ -49,3 +50,4 @@ app.add_middleware(
 app.include_router(deal_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(payout_router, prefix="/api/v1")

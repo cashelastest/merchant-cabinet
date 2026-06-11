@@ -9,6 +9,8 @@ export default function RegisterPage() {
   const { login: authLogin } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [secret, setSecret] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +19,7 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      const { access_token } = await register(username, password);
+      const { access_token } = await register(username, password, apiKey, secret);
       await authLogin(access_token);
       navigate('/deals');
     } catch (err: unknown) {
@@ -58,6 +60,30 @@ export default function RegisterPage() {
               required
               disabled={loading}
               autoComplete="new-password"
+            />
+          </div>
+          <div className={styles.formInputBlock}>
+            <label htmlFor="apiKey">API Key</label>
+            <input
+              id="apiKey"
+              type="text"
+              className={styles.formInput}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              required
+              disabled={loading}
+            />
+          </div>
+          <div className={styles.formInputBlock}>
+            <label htmlFor="secret">Secret</label>
+            <input
+              id="secret"
+              type="password"
+              className={styles.formInput}
+              value={secret}
+              onChange={(e) => setSecret(e.target.value)}
+              required
+              disabled={loading}
             />
           </div>
         </div>

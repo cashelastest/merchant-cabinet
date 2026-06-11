@@ -10,7 +10,8 @@ from sqlalchemy.exc import IntegrityError
 from core.config import SECRET_KEY
 from core.dependencies import get_user_service, get_current_user
 from services.user import UserService
-from schemas import CreateUserRequest, TokenResponse
+from services.bizon import BizonService
+from schemas import CreateUserRequest, LoginRequest, TokenResponse
 from models import User
 
 
@@ -40,7 +41,7 @@ async def register(data: CreateUserRequest, service: UserService = Depends(get_u
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(data: CreateUserRequest, service: UserService = Depends(get_user_service)):
+async def login(data: LoginRequest, service: UserService = Depends(get_user_service)):
     user = await service.authenticate(data.username, data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -49,10 +50,18 @@ async def login(data: CreateUserRequest, service: UserService = Depends(get_user
 
 @router.get("/me")
 async def me(user: User = Depends(get_current_user)):
+    balance = 0.0
+    try:
+        data = await BizonService.get_wallets_balance(user.api_key, user.secret)
+        wallets = data.get("wallets", [])
+        wallet = wallets[-1] if wallets else {}
+        balance = float(wallet.get("balance", 0))
+    except Exception:
+        pass
     return {
         "id": user.id,
         "username": user.username,
-        "balance": float(user.balance) if isinstance(user.balance, Decimal) else user.balance,
+        "balance": balance,
         "is_active": user.is_active,
         "currencies": [c.xml for c in user.currencies],
     }

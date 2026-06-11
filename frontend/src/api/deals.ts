@@ -19,3 +19,6 @@ export const acceptDeal = (id: number) =>
 
 export const refuseDeal = (id: number) =>
   client.post<{ id: number; status: string }>(`/deal/${id}/refuse`).then((r) => r.data);
+
+export const completeDeal = (id: number) =>
+  client.post<{ id: number; status: string }>(`/deal/${id}/complete`).then((r) => r.data);

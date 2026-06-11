@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Deal, WsDealMessage } from '../types'
 import { fetchDeals, createWs } from '../api'
+import { getMe } from '../api/auth'
+import { requestPayout } from '../api/payout'
 import DealRow from '../components/DealRow'
 
 const COLUMNS = [
@@ -16,10 +18,17 @@ interface Props {
 export default function DealsPage({ onLogout }: Props) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [filter, setFilter] = useState('')
+  const [balance, setBalance] = useState<number>(0)
+  const [showPayout, setShowPayout] = useState(false)
+  const [payoutAmount, setPayoutAmount] = useState('')
+  const [payoutWallet, setPayoutWallet] = useState('')
+  const [payoutError, setPayoutError] = useState('')
+  const [payoutLoading, setPayoutLoading] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
 
   useEffect(() => {
     fetchDeals().then(setDeals).catch(console.error)
+    getMe().then(u => setBalance(u.balance)).catch(console.error)
     connect()
     return () => wsRef.current?.close()
   }, [])
@@ -46,6 +55,37 @@ export default function DealsPage({ onLogout }: Props) {
 
   function handleAccepted(id: number) {
     setDeals(prev => prev.filter(d => d.id !== id))
+    getMe().then(u => setBalance(u.balance)).catch(console.error)
+  }
+
+  async function handlePayoutSubmit() {
+    setPayoutError('')
+    const amount = parseFloat(payoutAmount)
+    if (!payoutWallet.trim()) {
+      setPayoutError('Enter wallet address')
+      return
+    }
+    if (isNaN(amount) || amount <= 0) {
+      setPayoutError('Enter a valid amount')
+      return
+    }
+    if (amount > balance) {
+      setPayoutError('Insufficient balance')
+      return
+    }
+    setPayoutLoading(true)
+    try {
+      await requestPayout(amount, payoutWallet.trim())
+      setBalance(prev => parseFloat((prev - amount).toFixed(2)))
+      setShowPayout(false)
+      setPayoutAmount('')
+      setPayoutWallet('')
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setPayoutError(msg || 'Payout failed')
+    } finally {
+      setPayoutLoading(false)
+    }
   }
 
   const filtered = filter
@@ -92,10 +132,18 @@ export default function DealsPage({ onLogout }: Props) {
             <div className="flex gap-1">
               <button className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">End</button>
               <button className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">Pause</button>
-              <button className="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">Payout</button>
+              <button
+                onClick={() => { setShowPayout(true); setPayoutError('') }}
+                className="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+              >
+                Payout
+              </button>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <span className="text-blue-400 text-xs font-semibold border border-blue-500/30 bg-blue-500/10 px-3 py-1 rounded-lg">
+              Balance: ${balance.toFixed(2)}
+            </span>
             <span className="text-green-400 text-xs font-semibold border border-green-500/30 bg-green-500/10 px-3 py-1 rounded-lg">
               {deals.length} active
             </span>
@@ -149,6 +197,74 @@ export default function DealsPage({ onLogout }: Props) {
           </table>
         </div>
       </div>
+
+      {/* Payout modal */}
+      {showPayout && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+          onClick={e => { if (e.target === e.currentTarget) setShowPayout(false) }}
+        >
+          <div className="bg-[#0e1120] border border-[#1a1f30] rounded-xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-white font-semibold text-sm">Withdraw funds</h2>
+              <button
+                onClick={() => setShowPayout(false)}
+                className="text-gray-500 hover:text-white transition text-lg leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="text-gray-500 text-xs mb-4">
+              Available: <span className="text-green-400 font-semibold">${balance.toFixed(2)}</span>
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="text-gray-500 text-[11px] block mb-1">USDT wallet address (TRC20)</label>
+                <input
+                  className="w-full bg-[#141827] border border-[#1a1f30] rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-blue-500/50 transition"
+                  placeholder="T…"
+                  value={payoutWallet}
+                  onChange={e => setPayoutWallet(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-gray-500 text-[11px] block mb-1">Amount (USDT)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full bg-[#141827] border border-[#1a1f30] rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-blue-500/50 transition"
+                  placeholder="0.00"
+                  value={payoutAmount}
+                  onChange={e => setPayoutAmount(e.target.value)}
+                />
+              </div>
+
+              {payoutError && (
+                <p className="text-red-400 text-[11px]">{payoutError}</p>
+              )}
+
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={() => setShowPayout(false)}
+                  className="flex-1 bg-[#141827] hover:bg-[#1e2235] text-gray-400 text-xs font-medium py-2 rounded-lg transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePayoutSubmit}
+                  disabled={payoutLoading}
+                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-xs font-semibold py-2 rounded-lg transition"
+                >
+                  {payoutLoading ? 'Processing…' : 'Withdraw'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

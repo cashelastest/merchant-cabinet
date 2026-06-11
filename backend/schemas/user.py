@@ -2,9 +2,16 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
 class CreateUserRequest(BaseModel):
     username: str
     password: str
+    api_key: str
+    secret: str
 
 
 class UpdateUserRequest(BaseModel):

@@ -1,8 +1,8 @@
 import client from './client';
 import type { TokenResponse, User } from '../types';
 
-export const register = (username: string, password: string) =>
-  client.post<TokenResponse>('/auth/register', { username, password }).then((r) => r.data);
+export const register = (username: string, password: string, api_key: string, secret: string) =>
+  client.post<TokenResponse>('/auth/register', { username, password, api_key, secret }).then((r) => r.data);
 
 export const login = (username: string, password: string) =>
   client.post<TokenResponse>('/auth/login', { username, password }).then((r) => r.data);

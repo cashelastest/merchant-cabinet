@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getDeals, acceptDeal, refuseDeal } from '../../api/deals';
+import { getDeals, acceptDeal, refuseDeal, completeDeal } from '../../api/deals';
 import type { Deal } from '../../types';
 import CountdownTimer from '../../components/CountdownTimer/CountdownTimer';
 import styles from './DealsPage.module.css';
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; label: string }> = {
-  pending:  { bg: '#1a3a4d', color: '#60a5fa', label: 'ACTIVE'    },
-  accepted: { bg: '#1a4d1a', color: '#4ade80', label: 'ACCEPTED'  },
-  refused:  { bg: '#4d1a1a', color: '#f87171', label: 'CANCELLED' },
+  pending:     { bg: '#1a3a4d', color: '#60a5fa', label: 'АКТИВНАЯ'   },
+  in_progress: { bg: '#2d2a1a', color: '#fbbf24', label: 'В РАБОТЕ'   },
+  accepted:    { bg: '#1a4d1a', color: '#4ade80', label: 'ВЫПОЛНЕНА'  },
+  refused:     { bg: '#4d1a1a', color: '#f87171', label: 'ОТКЛОНЕНА'  },
 };
 
 function getStatusStyle(status: string) {
@@ -136,20 +137,10 @@ export default function DealsPage() {
     fetchDeals();
   };
 
-  const handleAccept = async (id: number) => {
+  const act = async (id: number, fn: (id: number) => Promise<{ id: number; status: string }>) => {
     setActing((p) => ({ ...p, [id]: true }));
     try {
-      const updated = await acceptDeal(id);
-      setDeals((prev) => prev.map((d) => (d.id === id ? { ...d, status: updated.status } : d)));
-    } finally {
-      setActing((p) => ({ ...p, [id]: false }));
-    }
-  };
-
-  const handleRefuse = async (id: number) => {
-    setActing((p) => ({ ...p, [id]: true }));
-    try {
-      const updated = await refuseDeal(id);
+      const updated = await fn(id);
       setDeals((prev) => prev.map((d) => (d.id === id ? { ...d, status: updated.status } : d)));
     } finally {
       setActing((p) => ({ ...p, [id]: false }));
@@ -181,10 +172,11 @@ export default function DealsPage() {
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
         >
-          <option value="">All statuses</option>
-          <option value="pending">Active (pending)</option>
-          <option value="accepted">Accepted</option>
-          <option value="refused">Cancelled</option>
+          <option value="">Все статусы</option>
+          <option value="pending">Активная</option>
+          <option value="in_progress">В работе</option>
+          <option value="accepted">Выполнена</option>
+          <option value="refused">Отклонена</option>
         </select>
         <button type="submit" className={styles.searchBtn}>
           Search
@@ -225,69 +217,73 @@ export default function DealsPage() {
               </tr>
             )}
             {!loading && deals.map((deal) => {
-              const isPending = deal.status === 'pending';
+              const isPending    = deal.status === 'pending';
+              const isInProgress = deal.status === 'in_progress';
               const busy = acting[deal.id];
               const ss = getStatusStyle(deal.status);
               const tv = deal.to_values;
 
               return (
-                <tr key={deal.id} className={isPending ? styles.rowActive : styles.rowInactive}>
-                  {/* Change Status buttons */}
+                <tr key={deal.id} className={isPending || isInProgress ? styles.rowActive : styles.rowInactive}>
+                  {/* Actions */}
                   <td className={styles.actionsCell}>
-                    <button
-                      className={`${styles.actionBtn} ${isPending ? styles.actionBtnActive : ''}`}
-                      onClick={() => handleAccept(deal.id)}
-                      disabled={!isPending || busy}
-                      title="Accept"
-                    >
-                      ✓
-                    </button>
-                    <button
-                      className={styles.refuseBtn}
-                      onClick={() => handleRefuse(deal.id)}
-                      disabled={!isPending || busy}
-                      title="Refuse Request"
-                    >
-                      Refuse Request
-                    </button>
+                    {isPending && (
+                      <>
+                        <button
+                          className={styles.btnAccept}
+                          onClick={() => act(deal.id, acceptDeal)}
+                          disabled={busy}
+                        >
+                          Принять
+                        </button>
+                        <button
+                          className={styles.btnRefuse}
+                          onClick={() => act(deal.id, refuseDeal)}
+                          disabled={busy}
+                        >
+                          Отклонить
+                        </button>
+                      </>
+                    )}
+                    {isInProgress && (
+                      <>
+                        <button
+                          className={styles.btnComplete}
+                          onClick={() => act(deal.id, completeDeal)}
+                          disabled={busy}
+                        >
+                          Выполнена
+                        </button>
+                        <button
+                          className={styles.btnCancel}
+                          onClick={() => act(deal.id, refuseDeal)}
+                          disabled={busy}
+                        >
+                          Отклонена
+                        </button>
+                      </>
+                    )}
                   </td>
 
-                  {/* Countdown timer */}
+                  {/* Timer — только для pending */}
                   <td className={styles.timerCell}>
-                    <CountdownTimer
-                      receivedAt={deal.received_at}
-                      isActive={isPending}
-                    />
+                    {isPending && (
+                      <CountdownTimer receivedAt={deal.received_at} isActive={true} />
+                    )}
                   </td>
 
-                  {/* Request ID */}
-                  <td className={styles.idCell} title={String(deal.id)}>
-                    #{deal.id} / uid:{deal.uid}
-                  </td>
+                  <td className={styles.idCell}>#{deal.id} / uid:{deal.uid}</td>
 
-                  {/* Status badge */}
                   <td>
-                    <span
-                      className={styles.statusBadge}
-                      style={{ backgroundColor: ss.bg, color: ss.color }}
-                    >
+                    <span className={styles.statusBadge} style={{ backgroundColor: ss.bg, color: ss.color }}>
                       {ss.label}
                     </span>
                   </td>
 
-                  {/* Currency */}
                   <td className={styles.cell}>{deal.from_xml}</td>
-
-                  {/* Country */}
                   <td className={styles.cell}>{getValue(tv, 'country')}</td>
-
-                  {/* USDT Wallet */}
                   <td className={styles.walletCell}>{getValue(tv, 'usdtWallet')}</td>
-
-                  {/* Amount */}
-                  <td className={styles.amountCell}>
-                    {getValue(tv, 'outAmount')} {deal.from_xml}
-                  </td>
+                  <td className={styles.amountCell}>{getValue(tv, 'outAmount')} {deal.from_xml}</td>
                 </tr>
               );
             })}

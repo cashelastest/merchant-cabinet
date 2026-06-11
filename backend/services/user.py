@@ -11,7 +11,7 @@ class UserService:
 
     async def create_user(self, data: CreateUserRequest) -> User:
         hashed = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
-        user = User(username=data.username, hashed_password=hashed)
+        user = User(username=data.username, hashed_password=hashed, api_key=data.api_key, secret=data.secret)
         await self.repository.save(user)
         await self.repository.session.commit()
         return user

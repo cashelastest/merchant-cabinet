@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 from .base import BaseService
+from .bizon import BizonService
 from repositories.deal import DealRepository
 from schemas import DealCreateRequest
 from models import Deal, User
@@ -47,18 +48,37 @@ class DealService(BaseService):
         deal = await self.repository.get_by_id(deal_id)
         if not deal:
             raise ValueError("not_found")
-        if deal.accepted_by is not None:
+        if deal.status != "pending":
             raise ValueError("already_accepted")
+
+        user = await self.repository.session.get(User, user_id)
+        if user and user.api_key:
+            await BizonService.update_order_status(user.api_key, user.secret, deal.uid, "inProgress")
+
+        deal.accepted_by = user_id
+        deal.accepted_at = _utcnow()
+        deal.status = "in_progress"
+
+        await self.repository.session.commit()
+        return deal
+
+    async def complete(self, deal_id: int, user_id: int) -> Deal:
+        deal = await self.repository.get_by_id(deal_id)
+        if not deal:
+            raise ValueError("not_found")
+        if deal.status != "in_progress" or deal.accepted_by != user_id:
+            raise ValueError("not_allowed")
 
         user = await self.repository.session.get(User, user_id)
         if not user:
             raise ValueError("user_not_found")
 
-        amount = Decimal(str(deal.to_values.get("outAmount", 0)))
+        if user.api_key:
+            await BizonService.update_order_status(user.api_key, user.secret, deal.uid, "done")
 
-        deal.accepted_by = user_id
-        deal.accepted_at = _utcnow()
+        amount = Decimal(str(deal.to_values.get("outAmount", 0)))
         deal.status = "accepted"
+        deal.updated_at = _utcnow()
         user.balance += amount
 
         await self.repository.session.commit()
@@ -68,12 +88,15 @@ class DealService(BaseService):
         deal = await self.repository.get_by_id(deal_id)
         if not deal:
             raise ValueError("not_found")
-        if deal.accepted_by is not None:
+        if deal.status not in ("pending", "in_progress"):
             raise ValueError("already_accepted")
+        if deal.status == "in_progress" and deal.accepted_by != user_id:
+            raise ValueError("not_allowed")
 
         deal.accepted_by = user_id
         deal.accepted_at = _utcnow()
         deal.status = "refused"
+        deal.updated_at = _utcnow()
 
         await self.repository.session.commit()
         return deal

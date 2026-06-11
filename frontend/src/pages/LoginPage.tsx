@@ -9,6 +9,8 @@ export default function LoginPage({ onLogin }: Props) {
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [secret, setSecret] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -19,13 +21,20 @@ export default function LoginPage({ onLogin }: Props) {
     try {
       const token = mode === 'login'
         ? await login(username, password)
-        : await register(username, password)
+        : await register(username, password, apiKey, secret)
       onLogin(token)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error')
     } finally {
       setLoading(false)
     }
+  }
+
+  function switchMode() {
+    setMode(mode === 'login' ? 'register' : 'login')
+    setError('')
+    setApiKey('')
+    setSecret('')
   }
 
   return (
@@ -57,6 +66,25 @@ export default function LoginPage({ onLogin }: Props) {
             required
           />
 
+          {mode === 'register' && (
+            <>
+              <input
+                className="bg-[#0b0e1b] border border-[#1e2235] rounded-lg px-4 py-3 text-white placeholder-gray-600 outline-none focus:border-blue-500 transition text-sm"
+                placeholder="API Key"
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+                required
+              />
+              <input
+                className="bg-[#0b0e1b] border border-[#1e2235] rounded-lg px-4 py-3 text-white placeholder-gray-600 outline-none focus:border-blue-500 transition text-sm"
+                placeholder="Secret"
+                value={secret}
+                onChange={e => setSecret(e.target.value)}
+                required
+              />
+            </>
+          )}
+
           {error && <p className="text-red-400 text-xs">{error}</p>}
 
           <button
@@ -72,7 +100,7 @@ export default function LoginPage({ onLogin }: Props) {
           {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
           <button
             className="text-blue-400 hover:text-blue-300 transition"
-            onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}
+            onClick={switchMode}
           >
             {mode === 'login' ? 'Register' : 'Sign In'}
           </button>
