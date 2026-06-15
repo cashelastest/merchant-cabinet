@@ -64,12 +64,10 @@ class BizonService:
         return None
 
     @classmethod
-    async def update_order_status(cls, api_key: str, secret: str, order_id: int, status: str) -> dict:
+    async def update_order_status(cls, api_key: str, secret: str, order_id: str, status: str) -> dict:
         api = ExchangerAPI(api_url=BIZON_BASE_URL, api_key=api_key, api_secret=secret)
-        payload = {"orderId": order_id, "status": status}
-        print(f"[update_order_status] payload={payload}, type={type(order_id)}", flush=True)
         return await api.call("PUT:/admin/exchanger/order/update-status", {
-            "post": payload
+            "post": {"orderId": order_id, "status": status}
         })
 
     @classmethod

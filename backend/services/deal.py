@@ -52,8 +52,8 @@ class DealService(BaseService):
             raise ValueError("already_accepted")
 
         user = await self.repository.session.get(User, user_id)
-        if user and user.api_key:
-            await BizonService.update_order_status(user.api_key, user.secret, deal.uid, "inProgress")
+        if user and user.api_key and deal.bizon_id:
+            await BizonService.update_order_status(user.api_key, user.secret, deal.bizon_id, "inProgress")
 
         deal.accepted_by = user_id
         deal.accepted_at = _utcnow()
@@ -73,8 +73,8 @@ class DealService(BaseService):
         if not user:
             raise ValueError("user_not_found")
 
-        if user.api_key:
-            await BizonService.update_order_status(user.api_key, user.secret, deal.uid, "done")
+        if user.api_key and deal.bizon_id:
+            await BizonService.update_order_status(user.api_key, user.secret, deal.bizon_id, "done")
 
         amount = Decimal(str(deal.to_values.get("outAmount", 0)))
         deal.status = "accepted"

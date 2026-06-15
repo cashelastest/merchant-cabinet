@@ -7,6 +7,7 @@ from datetime import datetime
 
 class DealCreateRequest(BaseModel):
     uid: int
+    bizon_id: Optional[str] = None
     secret: str
     to_values: Dict
     from_xml: str
@@ -27,6 +28,7 @@ class DealPublish(DealCreateRequest):
 class DealResponse(BaseModel):
     id: int
     uid: int
+    bizon_id: Optional[str] = None
     secret: str
     to_values: Dict
     from_xml: str
