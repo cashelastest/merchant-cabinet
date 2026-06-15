@@ -37,10 +37,13 @@ class ExchangerAPI:
             "apikey": self.config["apikey"],
             "hash": self._generate_hash(get, post),
         }
+        import sys
+        print(f"[ExchangerAPI] {type_method} {url} body={post}", file=sys.stderr, flush=True)
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.request(type_method, url, headers=headers, json=post or None)
             response.raise_for_status()
             body = response.json()
+            print(f"[ExchangerAPI] response={body}", file=sys.stderr, flush=True)
             if body.get("success") and body.get("data") is not None:
                 return body["data"]
             if body.get("result") is not None:
