@@ -66,8 +66,11 @@ class BizonService:
     @classmethod
     async def update_order_status(cls, api_key: str, secret: str, order_id: int, status: str) -> dict:
         api = ExchangerAPI(api_url=BIZON_BASE_URL, api_key=api_key, api_secret=secret)
+        payload = {"orderId": order_id, "status": status}
+        import logging
+        logging.getLogger(__name__).info(f"[update_order_status] payload={payload}")
         return await api.call("PUT:/admin/exchanger/order/update-status", {
-            "post": {"orderId": order_id, "status": status}
+            "post": payload
         })
 
     @classmethod
