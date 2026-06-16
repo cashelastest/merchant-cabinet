@@ -5,6 +5,7 @@ import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/auth/Login';
 import RegisterPage from './pages/auth/Register';
 import DealsPage from './pages/deals/DealsPage';
+import HistoryPage from './pages/history/HistoryPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminRoute from './components/admin/AdminRoute';
 import AdminLogin from './pages/admin/AdminLogin';
@@ -23,6 +24,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
             <Route path="/deals" element={<DealsPage />} />
+            <Route path="/history" element={<HistoryPage />} />
             <Route path="/" element={<Navigate to="/deals" replace />} />
           </Route>
         </Route>
