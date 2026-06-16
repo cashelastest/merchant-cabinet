@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import styles from './Header.module.css';
 import { useAuth } from '../../context/AuthContext';
-import { setMyStatus, updateMyCurrencies } from '../../api/auth';
+import { setMyStatus } from '../../api/auth';
 import { requestPayout } from '../../api/payout';
 
 export default function Header() {
@@ -9,10 +9,6 @@ export default function Header() {
   const isActive = user?.is_active ?? false;
 
   const [isPaused, setIsPaused] = useState(false);
-  const [showCurrencies, setShowCurrencies] = useState(false);
-  const [currencyInput, setCurrencyInput] = useState('');
-  const [saving, setSaving] = useState(false);
-
   const [showPayout, setShowPayout] = useState(false);
   const [payoutAmount, setPayoutAmount] = useState('');
   const [payoutWallet, setPayoutWallet] = useState('');
@@ -73,28 +69,6 @@ export default function Header() {
     }
   };
 
-  const openCurrencies = () => {
-    setCurrencyInput((user?.currencies ?? []).join(', '));
-    setShowCurrencies(true);
-  };
-
-  const saveCurrencies = async () => {
-    setSaving(true);
-    try {
-      const list = currencyInput
-        .split(/[,\s]+/)
-        .map((s) => s.trim().toUpperCase())
-        .filter(Boolean);
-      await updateMyCurrencies(list);
-      await refreshUser();
-      setShowCurrencies(false);
-      window.dispatchEvent(new CustomEvent('ws:update_currencies', { detail: { currencies: list } }));
-      window.dispatchEvent(new CustomEvent('deals:refresh'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
     <>
       <div className={styles.header}>
@@ -135,9 +109,6 @@ export default function Header() {
               <span className={`${styles.statusChip} ${isActive && !isPaused ? styles.statusActive : styles.statusPaused}`}>
                 {!isActive ? 'Inactive' : isPaused ? 'Paused' : 'Active'}
               </span>
-              <button className={styles.currenciesBtn} onClick={openCurrencies} title="Currencies">
-                {user.currencies.length > 0 ? user.currencies.join(', ') : '+ Currencies'}
-              </button>
               <span className={styles.balance}>
                 {user.username}: {Number(user.balance).toFixed(2)}
               </span>
@@ -222,32 +193,6 @@ export default function Header() {
         </div>
       )}
 
-      {showCurrencies && (
-        <div className={styles.modalOverlay} onClick={() => setShowCurrencies(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3 className={styles.modalTitle}>Currencies</h3>
-            <p className={styles.modalHint}>
-              Enter currency XML codes separated by commas (e.g. UAH, USDT, BTC)
-            </p>
-            <input
-              className={styles.modalInput}
-              value={currencyInput}
-              onChange={(e) => setCurrencyInput(e.target.value)}
-              placeholder="UAH, USDT, BTC"
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && saveCurrencies()}
-            />
-            <div className={styles.modalActions}>
-              <button className={styles.modalCancel} onClick={() => setShowCurrencies(false)}>
-                Cancel
-              </button>
-              <button className={styles.modalSave} onClick={saveCurrencies} disabled={saving}>
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

@@ -13,5 +13,3 @@ export const getMe = () =>
 export const setMyStatus = (is_active: boolean) =>
   client.patch<{ id: number; username: string; is_active: boolean }>('/auth/me/status', { is_active }).then((r) => r.data);
 
-export const updateMyCurrencies = (currencies: string[]) =>
-  client.patch<{ id: number; username: string; currencies: string[] }>('/auth/me/currencies', { currencies }).then((r) => r.data);

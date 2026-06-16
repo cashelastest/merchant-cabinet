@@ -19,10 +19,6 @@ class StatusUpdate(BaseModel):
     is_active: bool
 
 
-class CurrenciesUpdate(BaseModel):
-    currencies: list[str]
-
-
 router = APIRouter(prefix="/auth")
 
 
@@ -81,15 +77,3 @@ async def update_status(
     }
 
 
-@router.patch("/me/currencies")
-async def update_currencies(
-    data: CurrenciesUpdate,
-    user: User = Depends(get_current_user),
-    service: UserService = Depends(get_user_service),
-):
-    updated = await service.update_currencies(user, data.currencies)
-    return {
-        "id": updated.id,
-        "username": updated.username,
-        "currencies": [c.xml for c in updated.currencies],
-    }
