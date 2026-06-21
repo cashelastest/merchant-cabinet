@@ -10,6 +10,8 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/bizon
       REDIS_URL: redis://redis:6379
       SECRET_KEY: change-me-in-production
+      BIZON_ADMIN_API_KEY: ""
+      BIZON_ADMIN_SECRET: ""
     depends_on:
       db:
         condition: service_healthy

@@ -20,6 +20,14 @@ export default function AdminUsers() {
   const [saving, setSaving] = useState<Record<number, boolean>>({});
   const [saved, setSaved] = useState<Record<number, boolean>>({});
 
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newApiKey, setNewApiKey] = useState('');
+  const [newSecret, setNewSecret] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createSuccess, setCreateSuccess] = useState(false);
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -54,6 +62,29 @@ export default function AdminUsers() {
     }
   };
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+    setCreating(true);
+    try {
+      await adminClient.post('/admin/users', {
+        username: newUsername,
+        password: newPassword,
+        api_key: newApiKey,
+        secret: newSecret,
+      });
+      setCreateSuccess(true);
+      setNewUsername(''); setNewPassword(''); setNewApiKey(''); setNewSecret('');
+      setTimeout(() => setCreateSuccess(false), 3000);
+      await fetchUsers();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setCreateError(msg || 'Error creating user');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('adminToken');
     navigate('/admin/login');
@@ -67,11 +98,28 @@ export default function AdminUsers() {
           <button className={styles.navBtn} onClick={() => navigate('/admin/deals')}>
             Deals History
           </button>
+          <button className={styles.navBtn} onClick={() => navigate('/admin/logs')}>
+            API Logs
+          </button>
           <button className={styles.logoutBtn} onClick={logout}>Logout</button>
         </div>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
+
+      <form className={styles.createForm} onSubmit={handleCreate}>
+        <h2 className={styles.sectionTitle}>Create User</h2>
+        <div className={styles.createFields}>
+          <input className={styles.currencyInput} placeholder="Username" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
+          <input className={styles.currencyInput} placeholder="Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+          <input className={styles.currencyInput} placeholder="API Key" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} required />
+          <input className={styles.currencyInput} placeholder="Secret" value={newSecret} onChange={(e) => setNewSecret(e.target.value)} required />
+          <button className={createSuccess ? styles.savedBtn : styles.saveBtn} type="submit" disabled={creating}>
+            {creating ? 'Creating…' : createSuccess ? 'Created ✓' : 'Create'}
+          </button>
+        </div>
+        {createError && <div className={styles.error}>{createError}</div>}
+      </form>
 
       {loading ? (
         <div className={styles.empty}>Loading…</div>

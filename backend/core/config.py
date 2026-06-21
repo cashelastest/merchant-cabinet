@@ -10,3 +10,5 @@ ADMIN_USERNAME: str = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin")
 BPAY_URL: str = os.getenv("BPAY_URL", "https://bpay-processing.com")
 BIZON_PUBLIC_URL: str = "https://www.exchange-bizon.com/service/api/v1/public/exchanger"
+BIZON_ADMIN_API_KEY: str = os.getenv("BIZON_ADMIN_API_KEY", "")
+BIZON_ADMIN_SECRET: str = os.getenv("BIZON_ADMIN_SECRET", "")

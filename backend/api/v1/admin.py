@@ -6,10 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from core.dependencies import get_user_service, require_admin, get_session
 from services.user import UserService
-from models import User, Deal
+from schemas import CreateUserRequest
+from models import User, Deal, ApiKeyLog
 
 
 class CurrenciesUpdate(BaseModel):
@@ -98,4 +100,39 @@ async def list_deals(
             "created_at": d.created_at.isoformat(),
         }
         for d in deals
+    ]
+
+
+@router.post("/users")
+async def create_user(
+    data: CreateUserRequest,
+    _: User = Depends(require_admin),
+    service: UserService = Depends(get_user_service),
+):
+    try:
+        user = await service.create_user(data)
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail="Username already taken")
+    return {"id": user.id, "username": user.username}
+
+
+@router.get("/logs")
+async def get_logs(
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+    limit: int = Query(100, le=500),
+):
+    result = await session.execute(
+        select(ApiKeyLog).order_by(ApiKeyLog.used_at.desc()).limit(limit)
+    )
+    logs = result.scalars().all()
+    return [
+        {
+            "id": l.id,
+            "username": l.username,
+            "used_at": l.used_at.isoformat(),
+            "purpose": l.purpose,
+            "key_type": l.key_type,
+        }
+        for l in logs
     ]

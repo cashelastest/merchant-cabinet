@@ -6,7 +6,8 @@ from .base import BaseService
 from .bizon import BizonService
 from repositories.deal import DealRepository
 from schemas import DealCreateRequest
-from models import Deal, User
+from models import Deal, User, ApiKeyLog
+from core.config import BIZON_ADMIN_API_KEY, BIZON_ADMIN_SECRET
 
 
 def _utcnow() -> datetime:
@@ -52,8 +53,17 @@ class DealService(BaseService):
             raise ValueError("already_accepted")
 
         user = await self.repository.session.get(User, user_id)
-        if user and user.api_key and deal.bizon_id:
-            await BizonService.update_order_status(user.api_key, user.secret, deal.bizon_id, "inProgress")
+        if deal.bizon_id and BIZON_ADMIN_API_KEY:
+            await BizonService.update_order_status(
+                BIZON_ADMIN_API_KEY, BIZON_ADMIN_SECRET, deal.bizon_id, "inProgress"
+            )
+            log = ApiKeyLog(
+                username=user.username if user else str(user_id),
+                used_at=_utcnow(),
+                purpose=f"accept_deal #{deal.id}",
+                key_type="admin",
+            )
+            self.repository.session.add(log)
 
         deal.accepted_by = user_id
         deal.accepted_at = _utcnow()
@@ -73,8 +83,17 @@ class DealService(BaseService):
         if not user:
             raise ValueError("user_not_found")
 
-        if user.api_key and deal.bizon_id:
-            await BizonService.update_order_status(user.api_key, user.secret, deal.bizon_id, "done")
+        if deal.bizon_id and BIZON_ADMIN_API_KEY:
+            await BizonService.update_order_status(
+                BIZON_ADMIN_API_KEY, BIZON_ADMIN_SECRET, deal.bizon_id, "done"
+            )
+            log = ApiKeyLog(
+                username=user.username,
+                used_at=_utcnow(),
+                purpose=f"complete_deal #{deal.id}",
+                key_type="admin",
+            )
+            self.repository.session.add(log)
 
         amount = Decimal(str(deal.to_values.get("outAmount", 0)))
         deal.status = "accepted"

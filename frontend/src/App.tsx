@@ -11,6 +11,7 @@ import AdminRoute from './components/admin/AdminRoute';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminDeals from './pages/admin/AdminDeals';
+import AdminLogs from './pages/admin/AdminLogs';
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
         <Route element={<AdminRoute />}>
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/deals" element={<AdminDeals />} />
+          <Route path="/admin/logs" element={<AdminLogs />} />
         </Route>
         <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
 

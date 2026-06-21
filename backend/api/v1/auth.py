@@ -3,16 +3,15 @@
 import jwt
 from datetime import datetime, timedelta, UTC
 from fastapi import APIRouter, Depends, HTTPException
-from decimal import Decimal
 from pydantic import BaseModel
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import SECRET_KEY
-from core.dependencies import get_user_service, get_current_user
+from core.dependencies import get_user_service, get_current_user, get_session
 from services.user import UserService
 from services.bizon import BizonService
-from schemas import CreateUserRequest, LoginRequest, TokenResponse
-from models import User
+from schemas import LoginRequest, TokenResponse
+from models import User, ApiKeyLog
 
 
 class StatusUpdate(BaseModel):
@@ -27,15 +26,6 @@ def _create_token(user_id: int) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 
-@router.post("/register", response_model=TokenResponse)
-async def register(data: CreateUserRequest, service: UserService = Depends(get_user_service)):
-    try:
-        user = await service.create_user(data)
-    except IntegrityError:
-        raise HTTPException(status_code=409, detail="Username already taken")
-    return TokenResponse(access_token=_create_token(user.id))
-
-
 @router.post("/login", response_model=TokenResponse)
 async def login(data: LoginRequest, service: UserService = Depends(get_user_service)):
     user = await service.authenticate(data.username, data.password)
@@ -45,13 +35,24 @@ async def login(data: LoginRequest, service: UserService = Depends(get_user_serv
 
 
 @router.get("/me")
-async def me(user: User = Depends(get_current_user)):
+async def me(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
     balance = 0.0
     try:
         data = await BizonService.get_wallets_balance(user.api_key, user.secret)
         wallets = data.get("wallets", [])
         wallet = wallets[-1] if wallets else {}
         balance = float(wallet.get("balance", 0))
+        log = ApiKeyLog(
+            username=user.username,
+            used_at=datetime.utcnow(),
+            purpose="get_balance",
+            key_type="user",
+        )
+        session.add(log)
+        await session.commit()
     except Exception:
         pass
     return {
@@ -75,5 +76,3 @@ async def update_status(
         "username": updated.username,
         "is_active": updated.is_active,
     }
-
-

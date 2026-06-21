@@ -297,6 +297,27 @@
   background: #1f0a0a;
 }
 
+/* ---------- create user form ---------- */
+
+.createForm {
+  padding: 20px 28px;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.sectionTitle {
+  color: #e0e0e0;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.createFields {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 /* ---------- badges ---------- */
 
 .badgeActive {
