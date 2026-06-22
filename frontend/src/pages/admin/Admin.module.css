@@ -32,10 +32,13 @@
 /* ---------- layout ---------- */
 
 .page {
+  flex: 1;
   min-height: 100vh;
   background: #0a0a0a;
   color: #e0e0e0;
   padding: 0 0 40px;
+  display: flex;
+  flex-direction: column;
 }
 
 .topbar {
@@ -144,6 +147,7 @@
 /* ---------- table ---------- */
 
 .tableWrapper {
+  flex: 1;
   overflow-x: auto;
   padding: 20px 28px 0;
 }

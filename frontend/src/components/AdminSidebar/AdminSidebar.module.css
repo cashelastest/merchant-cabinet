@@ -1,11 +1,12 @@
 .sidebar {
-  width: 160px;
+  width: 180px;
+  min-height: 100vh;
   background-color: #0f0f0f;
   border-right: 1px solid #1a1a1a;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   padding: 12px 8px;
-  min-height: 100vh;
 }
 
 .nav {
@@ -19,7 +20,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-radius: 6px;
   color: #707070;
   text-decoration: none;
@@ -38,11 +39,15 @@
   color: #60a5fa;
 }
 
+.active:hover {
+  background-color: #1e3048;
+  color: #93c5fd;
+}
+
 .icon {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  font-size: 16px;
 }
 
 .label {
@@ -58,6 +63,8 @@
   font-size: 13px;
   cursor: pointer;
   transition: background 0.2s;
+  align-self: center;
+  width: 90%;
 }
 
 .logoutBtn:hover {
