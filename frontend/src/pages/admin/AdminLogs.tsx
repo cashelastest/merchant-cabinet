@@ -67,6 +67,7 @@ export default function AdminLogs() {
           </table>
         </div>
       )}
+      </div>
     </div>
   );
 }
