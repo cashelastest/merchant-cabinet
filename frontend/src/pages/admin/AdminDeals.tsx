@@ -1,7 +1,6 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import adminClient from '../../api/adminClient';
-import AdminSidebar from '../../components/AdminSidebar/AdminSidebar';
 import styles from './Admin.module.css';
 
 interface AdminDeal {
@@ -67,13 +66,25 @@ export default function AdminDeals() {
     return sum + (typeof v === 'number' ? v : 0);
   }, 0);
 
+  const logout = () => {
+    localStorage.removeItem('adminToken');
+    navigate('/admin/login');
+  };
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0a0a0a' }}>
-      <AdminSidebar />
-      <div className={styles.page}>
-        <div className={styles.topbar}>
-          <h1 className={styles.pageTitle}>Deals History</h1>
+    <div className={styles.page}>
+      <div className={styles.topbar}>
+        <h1 className={styles.pageTitle}>Admin — Deals History</h1>
+        <div className={styles.topbarActions}>
+          <button className={styles.navBtn} onClick={() => navigate('/admin/users')}>
+            Users
+          </button>
+          <button className={styles.navBtn} onClick={() => navigate('/admin/logs')}>
+            Logs
+          </button>
+          <button className={styles.logoutBtn} onClick={logout}>Logout</button>
         </div>
+      </div>
 
       {/* Filters */}
       <form className={styles.filterBar} onSubmit={fetchDeals}>
@@ -168,7 +179,6 @@ export default function AdminDeals() {
           </table>
         </div>
       )}
-      </div>
     </div>
   );
 }

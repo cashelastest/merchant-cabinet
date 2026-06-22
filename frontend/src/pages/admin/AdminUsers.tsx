@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import adminClient from '../../api/adminClient';
-import AdminSidebar from '../../components/AdminSidebar/AdminSidebar';
 import styles from './Admin.module.css';
 
 interface AdminUser {
@@ -12,6 +11,11 @@ interface AdminUser {
   currencies: string[];
 }
 
+interface EditUser {
+  username?: string;
+  password?: string;
+}
+
 export default function AdminUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -20,6 +24,9 @@ export default function AdminUsers() {
   const [currencyInputs, setCurrencyInputs] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState<Record<number, boolean>>({});
   const [saved, setSaved] = useState<Record<number, boolean>>({});
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editUsername, setEditUsername] = useState('');
+  const [editPassword, setEditPassword] = useState('');
 
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -107,13 +114,47 @@ export default function AdminUsers() {
     }
   };
 
+  const handleEditClick = (user: AdminUser) => {
+    setEditingId(user.id);
+    setEditUsername(user.username);
+    setEditPassword('');
+  };
+
+  const handleEditSubmit = async (userId: number) => {
+    setSaving((p) => ({ ...p, [userId]: true }));
+    try {
+      const updates: EditUser = {};
+      if (editUsername) updates.username = editUsername;
+      if (editPassword) updates.password = editPassword;
+      if (Object.keys(updates).length > 0) {
+        await adminClient.patch(`/admin/users/${userId}`, updates);
+      }
+      setEditingId(null);
+      await fetchUsers();
+    } finally {
+      setSaving((p) => ({ ...p, [userId]: false }));
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('adminToken');
+    navigate('/admin/login');
+  };
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0a0a0a' }}>
-      <AdminSidebar />
-      <div className={styles.page}>
-        <div className={styles.topbar}>
-          <h1 className={styles.pageTitle}>Users</h1>
+    <div className={styles.page}>
+      <div className={styles.topbar}>
+        <h1 className={styles.pageTitle}>Admin — Users</h1>
+        <div className={styles.topbarActions}>
+          <button className={styles.navBtn} onClick={() => navigate('/admin/deals')}>
+            Deals
+          </button>
+          <button className={styles.navBtn} onClick={() => navigate('/admin/logs')}>
+            Logs
+          </button>
+          <button className={styles.logoutBtn} onClick={logout}>Logout</button>
         </div>
+      </div>
 
       {error && <div className={styles.error}>{error}</div>}
 
@@ -140,6 +181,7 @@ export default function AdminUsers() {
               <tr>
                 <th>ID</th>
                 <th>Username</th>
+                <th>Password</th>
                 <th>Active</th>
                 <th>Role</th>
                 <th>Currencies</th>
@@ -150,7 +192,33 @@ export default function AdminUsers() {
               {users.map((u) => (
                 <tr key={u.id}>
                   <td>{u.id}</td>
-                  <td>{u.username}</td>
+                  <td>
+                    {editingId === u.id ? (
+                      <input
+                        className={styles.currencyInput}
+                        value={editUsername}
+                        onChange={(e) => setEditUsername(e.target.value)}
+                        autoFocus
+                      />
+                    ) : (
+                      <span onClick={() => handleEditClick(u)} style={{ cursor: 'pointer', color: '#60a5fa' }}>
+                        {u.username}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    {editingId === u.id ? (
+                      <input
+                        className={styles.currencyInput}
+                        type="password"
+                        value={editPassword}
+                        onChange={(e) => setEditPassword(e.target.value)}
+                        placeholder="(leave empty to keep)"
+                      />
+                    ) : (
+                      <span style={{ color: '#aaa', fontSize: '12px' }}>••••••</span>
+                    )}
+                  </td>
                   <td>
                     <button
                       className={u.is_active ? styles.badgeActive : styles.badgePaused}
@@ -175,20 +243,41 @@ export default function AdminUsers() {
                     />
                   </td>
                   <td style={{ display: 'flex', gap: '6px' }}>
-                    <button
-                      className={saved[u.id] ? styles.savedBtn : styles.saveBtn}
-                      onClick={() => handleSave(u.id)}
-                      disabled={saving[u.id]}
-                    >
-                      {saving[u.id] ? 'Saving…' : saved[u.id] ? 'Saved ✓' : 'Save'}
-                    </button>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => handleDelete(u.id)}
-                      disabled={saving[u.id]}
-                    >
-                      Delete
-                    </button>
+                    {editingId === u.id ? (
+                      <>
+                        <button
+                          className={styles.saveBtn}
+                          onClick={() => handleEditSubmit(u.id)}
+                          disabled={saving[u.id]}
+                        >
+                          {saving[u.id] ? 'Saving…' : 'Save'}
+                        </button>
+                        <button
+                          className={styles.resetBtn}
+                          onClick={() => setEditingId(null)}
+                          disabled={saving[u.id]}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className={saved[u.id] ? styles.savedBtn : styles.saveBtn}
+                          onClick={() => handleSave(u.id)}
+                          disabled={saving[u.id]}
+                        >
+                          {saving[u.id] ? 'Saving…' : saved[u.id] ? 'Saved ✓' : 'Save'}
+                        </button>
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDelete(u.id)}
+                          disabled={saving[u.id]}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -196,7 +285,6 @@ export default function AdminUsers() {
           </table>
         </div>
       )}
-      </div>
     </div>
   );
 }

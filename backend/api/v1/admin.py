@@ -19,8 +19,10 @@ class CurrenciesUpdate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    is_active: bool | None = None
-    currencies: list[str] | None = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    is_active: Optional[bool] = None
+    currencies: Optional[list[str]] = None
 
 
 router = APIRouter(prefix="/admin")
@@ -150,9 +152,15 @@ async def update_user(
     _: User = Depends(require_admin),
     service: UserService = Depends(get_user_service),
 ):
+    import bcrypt
     user = await service.repository.get_with_currencies(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if data.username is not None:
+        user.username = data.username
+    if data.password is not None:
+        hashed = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
+        user.hashed_password = hashed
     if data.is_active is not None:
         user.is_active = data.is_active
     if data.currencies is not None:
