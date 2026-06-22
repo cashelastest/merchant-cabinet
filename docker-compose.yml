@@ -7,11 +7,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/bizon
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       REDIS_URL: redis://redis:6379
-      SECRET_KEY: change-me-in-production
-      BIZON_ADMIN_API_KEY: ""
-      BIZON_ADMIN_SECRET: ""
+      SECRET_KEY: ${SECRET_KEY}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      BIZON_ADMIN_API_KEY: ${BIZON_ADMIN_API_KEY}
+      BIZON_ADMIN_SECRET: ${BIZON_ADMIN_SECRET}
     depends_on:
       db:
         condition: service_healthy
@@ -32,11 +34,11 @@ services:
     image: postgres:16-alpine
     container_name: merchant-db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: bizon
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 5s
       timeout: 5s
       retries: 5
