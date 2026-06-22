@@ -318,6 +318,30 @@
   align-items: center;
 }
 
+/* ---------- delete button ---------- */
+
+.deleteBtn {
+  background: #7f1d1d;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: #991b1b;
+}
+
+.deleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ---------- badges ---------- */
 
 .badgeActive {

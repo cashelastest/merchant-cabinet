@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import adminClient from '../../api/adminClient';
+import AdminSidebar from '../../components/AdminSidebar/AdminSidebar';
 import styles from './Admin.module.css';
 
 interface LogEntry {
@@ -23,21 +24,13 @@ export default function AdminLogs() {
       .finally(() => setLoading(false));
   }, [navigate]);
 
-  const logout = () => {
-    localStorage.removeItem('adminToken');
-    navigate('/admin/login');
-  };
-
   return (
-    <div className={styles.page}>
-      <div className={styles.topbar}>
-        <h1 className={styles.pageTitle}>Admin — API Key Logs</h1>
-        <div className={styles.topbarActions}>
-          <button className={styles.navBtn} onClick={() => navigate('/admin/users')}>Users</button>
-          <button className={styles.navBtn} onClick={() => navigate('/admin/deals')}>Deals</button>
-          <button className={styles.logoutBtn} onClick={logout}>Logout</button>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0a0a0a' }}>
+      <AdminSidebar />
+      <div className={styles.page}>
+        <div className={styles.topbar}>
+          <h1 className={styles.pageTitle}>API Key Logs</h1>
         </div>
-      </div>
 
       {loading ? (
         <div className={styles.empty}>Loading…</div>

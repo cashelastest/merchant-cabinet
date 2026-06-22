@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import adminClient from '../../api/adminClient';
+import AdminSidebar from '../../components/AdminSidebar/AdminSidebar';
 import styles from './Admin.module.css';
 
 interface AdminUser {
@@ -85,25 +86,34 @@ export default function AdminUsers() {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('adminToken');
-    navigate('/admin/login');
+  const handleToggleActive = async (userId: number, isActive: boolean) => {
+    setSaving((p) => ({ ...p, [userId]: true }));
+    try {
+      await adminClient.patch(`/admin/users/${userId}`, { is_active: !isActive });
+      await fetchUsers();
+    } finally {
+      setSaving((p) => ({ ...p, [userId]: false }));
+    }
+  };
+
+  const handleDelete = async (userId: number) => {
+    if (!window.confirm('Delete this user?')) return;
+    setSaving((p) => ({ ...p, [userId]: true }));
+    try {
+      await adminClient.delete(`/admin/users/${userId}`);
+      await fetchUsers();
+    } finally {
+      setSaving((p) => ({ ...p, [userId]: false }));
+    }
   };
 
   return (
-    <div className={styles.page}>
-      <div className={styles.topbar}>
-        <h1 className={styles.pageTitle}>Admin — Users</h1>
-        <div className={styles.topbarActions}>
-          <button className={styles.navBtn} onClick={() => navigate('/admin/deals')}>
-            Deals History
-          </button>
-          <button className={styles.navBtn} onClick={() => navigate('/admin/logs')}>
-            API Logs
-          </button>
-          <button className={styles.logoutBtn} onClick={logout}>Logout</button>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0a0a0a' }}>
+      <AdminSidebar />
+      <div className={styles.page}>
+        <div className={styles.topbar}>
+          <h1 className={styles.pageTitle}>Users</h1>
         </div>
-      </div>
 
       {error && <div className={styles.error}>{error}</div>}
 
@@ -130,10 +140,10 @@ export default function AdminUsers() {
               <tr>
                 <th>ID</th>
                 <th>Username</th>
-                <th>Status</th>
+                <th>Active</th>
                 <th>Role</th>
                 <th>Currencies</th>
-                <th>Action</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -142,9 +152,14 @@ export default function AdminUsers() {
                   <td>{u.id}</td>
                   <td>{u.username}</td>
                   <td>
-                    <span className={u.is_active ? styles.badgeActive : styles.badgePaused}>
-                      {u.is_active ? 'Active' : 'Paused'}
-                    </span>
+                    <button
+                      className={u.is_active ? styles.badgeActive : styles.badgePaused}
+                      onClick={() => handleToggleActive(u.id, u.is_active)}
+                      disabled={saving[u.id]}
+                      style={{ border: 'none', cursor: 'pointer', fontSize: 'inherit' }}
+                    >
+                      {u.is_active ? '✓ Active' : '✕ Inactive'}
+                    </button>
                   </td>
                   <td>
                     <span className={u.is_admin ? styles.badgeAdmin : styles.badgeUser}>
@@ -159,13 +174,20 @@ export default function AdminUsers() {
                       placeholder="UAH, USDT, BTC"
                     />
                   </td>
-                  <td>
+                  <td style={{ display: 'flex', gap: '6px' }}>
                     <button
                       className={saved[u.id] ? styles.savedBtn : styles.saveBtn}
                       onClick={() => handleSave(u.id)}
                       disabled={saving[u.id]}
                     >
                       {saving[u.id] ? 'Saving…' : saved[u.id] ? 'Saved ✓' : 'Save'}
+                    </button>
+                    <button
+                      className={styles.deleteBtn}
+                      onClick={() => handleDelete(u.id)}
+                      disabled={saving[u.id]}
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>

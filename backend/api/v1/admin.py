@@ -18,6 +18,11 @@ class CurrenciesUpdate(BaseModel):
     currencies: list[str]
 
 
+class UserUpdate(BaseModel):
+    is_active: bool | None = None
+    currencies: list[str] | None = None
+
+
 router = APIRouter(prefix="/admin")
 
 
@@ -136,3 +141,42 @@ async def get_logs(
         }
         for l in logs
     ]
+
+
+@router.patch("/users/{user_id}")
+async def update_user(
+    user_id: int,
+    data: UserUpdate,
+    _: User = Depends(require_admin),
+    service: UserService = Depends(get_user_service),
+):
+    user = await service.repository.get_with_currencies(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if data.is_active is not None:
+        user.is_active = data.is_active
+    if data.currencies is not None:
+        await service.update_currencies(user, data.currencies)
+    else:
+        await service.repository.session.commit()
+        await service.repository.session.refresh(user)
+    return {
+        "id": user.id,
+        "username": user.username,
+        "is_active": user.is_active,
+        "currencies": [c.xml for c in user.currencies],
+    }
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    user = await session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await session.delete(user)
+    await session.commit()
+    return {"id": user_id, "deleted": True}
