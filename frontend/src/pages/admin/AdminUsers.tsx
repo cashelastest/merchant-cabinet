@@ -196,6 +196,7 @@ export default function AdminUsers() {
           </table>
         </div>
       )}
+      </div>
     </div>
   );
 }
