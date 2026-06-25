@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from typing import Optional
 import json
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from core.ws_manager import manager
-from core.dependencies import get_current_user, get_current_user_ws, get_deal_service, redis_service
+from core.dependencies import get_current_user, get_current_user_ws, get_deal_service, redis_service, get_session
 from services.deal import DealService
 from models import User
 from schemas import DealCreateRequest, DealResponse
+from repositories.user import UserRepository
 
 router = APIRouter()
 
@@ -20,8 +22,22 @@ async def list_deals(
     from_xml: Optional[str] = None,
     service: DealService = Depends(get_deal_service),
     user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ):
-    return await service.list_deals(user, deal_id, status, from_xml)
+    deals = await service.list_deals(user, deal_id, status, from_xml)
+    user_repo = UserRepository(session)
+    result = []
+    for deal in deals:
+        deal_dict = {
+            **deal.__dict__,
+            "accepted_by_username": None,
+        }
+        if deal.accepted_by:
+            accepted_user = await user_repo.get_by_id(deal.accepted_by)
+            if accepted_user:
+                deal_dict["accepted_by_username"] = accepted_user.username
+        result.append(DealResponse(**deal_dict))
+    return result
 
 
 @router.post("/deal/")

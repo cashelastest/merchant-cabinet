@@ -1,16 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getDeals } from '../../api/deals';
-import type { Deal } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { getDeals, getUser } from '../../api/deals';
+import type { Deal, User } from '../../types/index';
 import styles from '../deals/DealsPage.module.css';
 
-const STATUS_COLORS: Record<string, { bg: string; color: string; label: string }> = {
-  accepted: { bg: '#1a4d1a', color: '#4ade80', label: 'ВЫПОЛНЕНА' },
-  refused:  { bg: '#4d1a1a', color: '#f87171', label: 'ОТКЛОНЕНА' },
+const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+  accepted: { bg: '#1a4d1a', color: '#4ade80' },
+  refused:  { bg: '#4d1a1a', color: '#f87171' },
 };
-
-function getStatusStyle(status: string) {
-  return STATUS_COLORS[status] ?? { bg: '#2a2a2a', color: '#9ca3af', label: status.toUpperCase() };
-}
 
 function getValue(values: Record<string, unknown>, key: string): string {
   const v = values[key];
@@ -18,8 +15,10 @@ function getValue(values: Record<string, unknown>, key: string): string {
 }
 
 export default function HistoryPage() {
+  const { t } = useTranslation();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const [filterId, setFilterId] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -48,14 +47,20 @@ export default function HistoryPage() {
     fetchDeals();
   };
 
+  const handleUserClick = async (userId: number | null) => {
+    if (!userId) return;
+    const user = await getUser(userId);
+    setSelectedUser(user);
+  };
+
   return (
     <div className={styles.page}>
-      <div className={styles.breadcrumb}>History / List</div>
+      <div className={styles.breadcrumb}>{t('history.breadcrumb')}</div>
 
       <form className={styles.filterBar} onSubmit={handleSearch}>
         <input
           className={styles.filterInput}
-          placeholder="Request ID"
+          placeholder={t('history.filters.request_id')}
           value={filterId}
           onChange={(e) => setFilterId(e.target.value)}
           type="number"
@@ -63,7 +68,7 @@ export default function HistoryPage() {
         />
         <input
           className={styles.filterInput}
-          placeholder="Currency (from_xml)"
+          placeholder={t('history.filters.currency')}
           value={filterXml}
           onChange={(e) => setFilterXml(e.target.value)}
         />
@@ -72,17 +77,17 @@ export default function HistoryPage() {
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
         >
-          <option value="">Все статусы</option>
-          <option value="accepted">Выполнена</option>
-          <option value="refused">Отклонена</option>
+          <option value="">{t('history.filters.all_statuses')}</option>
+          <option value="accepted">{t('history.filters.completed')}</option>
+          <option value="refused">{t('history.filters.rejected')}</option>
         </select>
-        <button type="submit" className={styles.searchBtn}>Search</button>
+        <button type="submit" className={styles.searchBtn}>{t('common.search')}</button>
         <button
           type="button"
           className={styles.resetBtn}
           onClick={() => { setFilterId(''); setFilterStatus(''); setFilterXml(''); }}
         >
-          Reset
+          {t('common.reset')}
         </button>
       </form>
 
@@ -90,31 +95,32 @@ export default function HistoryPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Request Id</th>
-              <th>Status</th>
-              <th>Currency</th>
-              <th>Country</th>
-              <th>USDT Wallet</th>
-              <th>Amount</th>
-              <th>Created</th>
+              <th>{t('history.table.request_id')}</th>
+              <th>{t('history.table.status')}</th>
+              <th>{t('history.table.currency')}</th>
+              <th>{t('history.table.country')}</th>
+              <th>{t('history.table.wallet')}</th>
+              <th>{t('history.table.amount')}</th>
+              <th>{t('history.table.accepted_by')}</th>
+              <th>{t('history.table.created')}</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={7} className={styles.emptyState}>Loading…</td></tr>
+              <tr><td colSpan={8} className={styles.emptyState}>{t('common.loading')}</td></tr>
             )}
             {!loading && deals.length === 0 && (
-              <tr><td colSpan={7} className={styles.emptyState}>No history found</td></tr>
+              <tr><td colSpan={8} className={styles.emptyState}>{t('common.no_data')}</td></tr>
             )}
             {!loading && deals.map((deal) => {
-              const ss = getStatusStyle(deal.status);
+              const sc = STATUS_COLORS[deal.status];
               const tv = deal.to_values;
               return (
                 <tr key={deal.id} className={styles.rowInactive}>
                   <td className={styles.idCell}>#{deal.id} / uid:{deal.uid}</td>
                   <td>
-                    <span className={styles.statusBadge} style={{ backgroundColor: ss.bg, color: ss.color }}>
-                      {ss.label}
+                    <span className={styles.statusBadge} style={{ backgroundColor: sc.bg, color: sc.color }}>
+                      {t(`history.status_label.${deal.status}`)}
                     </span>
                   </td>
                   <td className={styles.cell}>{deal.from_xml}</td>
@@ -122,7 +128,16 @@ export default function HistoryPage() {
                   <td className={styles.walletCell}>{getValue(tv, 'usdtWallet')}</td>
                   <td className={styles.amountCell}>{getValue(tv, 'outAmount')} {deal.from_xml}</td>
                   <td className={styles.cell}>
-                    {new Date(deal.created_at).toLocaleString('ru-RU', {
+                    {deal.accepted_by_username ? (
+                      <span style={{ color: '#60a5fa', cursor: 'pointer' }} onClick={() => handleUserClick(deal.accepted_by)}>
+                        {deal.accepted_by_username}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#666' }}>—</span>
+                    )}
+                  </td>
+                  <td className={styles.cell}>
+                    {new Date(deal.created_at).toLocaleString('en-GB', {
                       day: '2-digit', month: '2-digit', year: 'numeric',
                       hour: '2-digit', minute: '2-digit',
                     })}
@@ -133,6 +148,40 @@ export default function HistoryPage() {
           </tbody>
         </table>
       </div>
+
+      {selectedUser && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+        }} onClick={() => setSelectedUser(null)}>
+          <div style={{
+            backgroundColor: '#1a1a1a', color: '#fff', padding: '20px', borderRadius: '8px',
+            maxWidth: '400px', width: '90%', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '15px' }}>
+              {t('user_details.title')}
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <strong>{t('user_details.username')}:</strong> {selectedUser.username}
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <strong>{t('user_details.balance')}:</strong> {selectedUser.balance}
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <strong>{t('user_details.status')}:</strong> {selectedUser.is_active ? t('user_details.active') : t('user_details.inactive')}
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <strong>{t('user_details.payout_currencies')}:</strong> {selectedUser.currencies.join(', ')}
+            </div>
+            <button onClick={() => setSelectedUser(null)} style={{
+              backgroundColor: '#2a2a2a', color: '#fff', border: 'none', padding: '8px 16px',
+              borderRadius: '4px', cursor: 'pointer', marginTop: '10px',
+            }}>
+              {t('common.close')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

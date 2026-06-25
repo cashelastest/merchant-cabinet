@@ -28,6 +28,7 @@ export interface Deal {
   to_image_xml: string;
   status: string;
   accepted_by: number | null;
+  accepted_by_username?: string | null;
   accepted_at: string | null;
   received_at: string | null;
   created_at: string;

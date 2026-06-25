@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import adminClient from '../../api/adminClient';
+import LanguageSwitcher from '../../components/LanguageSwitcher/LanguageSwitcher';
 import styles from './Admin.module.css';
 
 interface AdminUser {
@@ -17,6 +19,7 @@ interface EditUser {
 }
 
 export default function AdminUsers() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,48 +147,49 @@ export default function AdminUsers() {
   return (
     <div className={styles.page}>
       <div className={styles.topbar}>
-        <h1 className={styles.pageTitle}>Admin — Users</h1>
+        <h1 className={styles.pageTitle}>{t('admin.users.breadcrumb')}</h1>
         <div className={styles.topbarActions}>
+          <LanguageSwitcher />
           <button className={styles.navBtn} onClick={() => navigate('/admin/deals')}>
-            Deals
+            {t('nav.admin_users')}
           </button>
           <button className={styles.navBtn} onClick={() => navigate('/admin/logs')}>
-            Logs
+            {t('nav.admin_logs')}
           </button>
-          <button className={styles.logoutBtn} onClick={logout}>Logout</button>
+          <button className={styles.logoutBtn} onClick={logout}>{t('nav.logout')}</button>
         </div>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
 
       <form className={styles.createForm} onSubmit={handleCreate}>
-        <h2 className={styles.sectionTitle}>Create User</h2>
+        <h2 className={styles.sectionTitle}>{t('admin.users.create_user')}</h2>
         <div className={styles.createFields}>
-          <input className={styles.currencyInput} placeholder="Username" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
-          <input className={styles.currencyInput} placeholder="Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-          <input className={styles.currencyInput} placeholder="API Key" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} required />
-          <input className={styles.currencyInput} placeholder="Secret" value={newSecret} onChange={(e) => setNewSecret(e.target.value)} required />
+          <input className={styles.currencyInput} placeholder={t('admin.users.username')} value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
+          <input className={styles.currencyInput} placeholder={t('admin.users.password')} type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+          <input className={styles.currencyInput} placeholder={t('admin.users.api_key')} value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} required />
+          <input className={styles.currencyInput} placeholder={t('admin.users.secret')} value={newSecret} onChange={(e) => setNewSecret(e.target.value)} required />
           <button className={createSuccess ? styles.savedBtn : styles.saveBtn} type="submit" disabled={creating}>
-            {creating ? 'Creating…' : createSuccess ? 'Created ✓' : 'Create'}
+            {creating ? 'Creating…' : createSuccess ? 'Created ✓' : t('common.save')}
           </button>
         </div>
         {createError && <div className={styles.error}>{createError}</div>}
       </form>
 
       {loading ? (
-        <div className={styles.empty}>Loading…</div>
+        <div className={styles.empty}>{t('common.loading')}</div>
       ) : (
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Username</th>
-                <th>Password</th>
-                <th>Active</th>
+                <th>{t('admin.users.table.id')}</th>
+                <th>{t('admin.users.table.username')}</th>
+                <th>{t('admin.users.table.actions')}</th>
+                <th>{t('admin.users.status')}</th>
                 <th>Role</th>
-                <th>Currencies</th>
-                <th>Actions</th>
+                <th>{t('admin.users.currencies')}</th>
+                <th>{t('admin.users.table.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -226,7 +230,7 @@ export default function AdminUsers() {
                       disabled={saving[u.id]}
                       style={{ border: 'none', cursor: 'pointer', fontSize: 'inherit' }}
                     >
-                      {u.is_active ? '✓ Active' : '✕ Inactive'}
+                      {u.is_active ? `✓ ${t('admin.users.active')}` : `✕ ${t('admin.users.inactive')}`}
                     </button>
                   </td>
                   <td>
@@ -250,14 +254,14 @@ export default function AdminUsers() {
                           onClick={() => handleEditSubmit(u.id)}
                           disabled={saving[u.id]}
                         >
-                          {saving[u.id] ? 'Saving…' : 'Save'}
+                          {saving[u.id] ? 'Saving…' : t('common.save')}
                         </button>
                         <button
                           className={styles.resetBtn}
                           onClick={() => setEditingId(null)}
                           disabled={saving[u.id]}
                         >
-                          Cancel
+                          {t('common.cancel')}
                         </button>
                       </>
                     ) : (
@@ -267,14 +271,14 @@ export default function AdminUsers() {
                           onClick={() => handleSave(u.id)}
                           disabled={saving[u.id]}
                         >
-                          {saving[u.id] ? 'Saving…' : saved[u.id] ? 'Saved ✓' : 'Save'}
+                          {saving[u.id] ? 'Saving…' : saved[u.id] ? 'Saved ✓' : t('common.save')}
                         </button>
                         <button
                           className={styles.deleteBtn}
                           onClick={() => handleDelete(u.id)}
                           disabled={saving[u.id]}
                         >
-                          Delete
+                          {t('common.delete')}
                         </button>
                       </>
                     )}

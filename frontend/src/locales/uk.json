@@ -1,0 +1,168 @@
+{
+  "common": {
+    "search": "Пошук",
+    "reset": "Скинути",
+    "loading": "Завантаження…",
+    "no_data": "Дані не знайдені",
+    "edit": "Редагувати",
+    "delete": "Видалити",
+    "save": "Зберегти",
+    "cancel": "Скасувати",
+    "close": "Закрити",
+    "yes": "Так",
+    "no": "Ні",
+    "details": "Деталі",
+    "status": "Статус"
+  },
+  "nav": {
+    "active_deals": "Активні заявки",
+    "history": "Історія",
+    "logout": "Вихід",
+    "admin_users": "Користувачі",
+    "admin_logs": "Логи",
+    "dashboard": "Панель управління"
+  },
+  "deals": {
+    "breadcrumb": "Заявки / Список",
+    "filters": {
+      "request_id": "ID заявки",
+      "currency": "Валюта (from_xml)"
+    },
+    "table": {
+      "request_id": "ID заявки",
+      "status": "Статус",
+      "currency": "Валюта",
+      "country": "Країна",
+      "wallet": "USDT гаманець",
+      "amount": "Сума",
+      "accepted_by": "Прийняв користувач",
+      "created": "Створена"
+    },
+    "status_badge": {
+      "accepted": "ПРИЙНЯТА",
+      "refused": "ВІДХИЛЕНА",
+      "pending": "ОЧІКУВАННЯ",
+      "in_progress": "В ОБРОБЦІ"
+    },
+    "buttons": {
+      "accept": "Прийняти",
+      "refuse": "Відхилити",
+      "complete": "Завершити"
+    }
+  },
+  "history": {
+    "breadcrumb": "Історія / Список",
+    "filters": {
+      "request_id": "ID заявки",
+      "currency": "Валюта (from_xml)",
+      "all_statuses": "Всі статуси",
+      "completed": "Виконана",
+      "rejected": "Відхилена"
+    },
+    "table": {
+      "request_id": "ID заявки",
+      "status": "Статус",
+      "currency": "Валюта",
+      "country": "Країна",
+      "wallet": "USDT гаманець",
+      "amount": "Сума",
+      "accepted_by": "Прийняв користувач",
+      "created": "Створена"
+    },
+    "status_label": {
+      "accepted": "ВИКОНАНА",
+      "refused": "ВІДХИЛЕНА"
+    }
+  },
+  "admin": {
+    "users": {
+      "breadcrumb": "Адмін / Користувачі",
+      "title": "Управління користувачами",
+      "create_user": "Створити користувача",
+      "edit_user": "Редагувати користувача",
+      "delete_user": "Видалити користувача",
+      "delete_confirmation": "Ви впевнені, що хочете видалити цього користувача?",
+      "username": "Імя користувача",
+      "password": "Пароль",
+      "api_key": "API ключ",
+      "secret": "Секрет",
+      "currencies": "Валюти виплати",
+      "status": "Статус",
+      "active": "Активний",
+      "inactive": "Неактивний",
+      "make_active": "Активувати",
+      "make_inactive": "Деактивувати",
+      "table": {
+        "id": "ID",
+        "username": "Імя користувача",
+        "api_key": "API ключ",
+        "status": "Статус",
+        "currencies": "Валюти виплати",
+        "actions": "Дії",
+        "edit": "Редагувати",
+        "delete": "Видалити"
+      },
+      "messages": {
+        "success": "Користувач успішно збережений",
+        "deleted": "Користувач успішно видалений",
+        "error": "Помилка при збереженні користувача"
+      },
+      "modal": {
+        "title_create": "Створити користувача",
+        "title_edit": "Редагувати користувача",
+        "placeholder_username": "Введіть імя користувача",
+        "placeholder_password": "Введіть пароль",
+        "placeholder_api_key": "Введіть API ключ",
+        "placeholder_secret": "Введіть секрет",
+        "placeholder_currencies": "Введіть валюти (через кому, наприклад, USDT,BTC)",
+        "save": "Зберегти",
+        "cancel": "Скасувати"
+      }
+    },
+    "deals": {
+      "breadcrumb": "Адмін / Заявки",
+      "title": "Історія заявок",
+      "filters": {
+        "today_only": "Тільки сьогодні",
+        "date_from": "Від",
+        "date_to": "До",
+        "status": "Статус",
+        "all_statuses": "Всі статуси"
+      },
+      "table": {
+        "id": "ID",
+        "uid": "UID",
+        "currency": "Валюта",
+        "from_name": "Від",
+        "to_name": "До",
+        "amount": "Сума",
+        "status": "Статус",
+        "accepted_by": "Прийняв",
+        "accepted_at": "Прийнято",
+        "created_at": "Створена",
+        "total_amount": "Разом"
+      }
+    },
+    "logs": {
+      "breadcrumb": "Адмін / Логи API",
+      "title": "Логи використання API ключів",
+      "table": {
+        "timestamp": "Час",
+        "username": "Імя користувача",
+        "purpose": "Мета",
+        "key_type": "Тип ключа",
+        "no_logs": "Логи не знайдені"
+      }
+    }
+  },
+  "user_details": {
+    "title": "Інформація про користувача",
+    "username": "Імя користувача",
+    "balance": "Баланс",
+    "status": "Статус",
+    "payout_currencies": "Валюти виплати",
+    "active": "Активний",
+    "inactive": "Неактивний",
+    "created_at": "Створений"
+  }
+}

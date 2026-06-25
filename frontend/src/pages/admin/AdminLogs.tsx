@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import adminClient from '../../api/adminClient';
 import styles from './Admin.module.css';
 
@@ -12,6 +13,7 @@ interface LogEntry {
 }
 
 export default function AdminLogs() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,35 +33,35 @@ export default function AdminLogs() {
   return (
     <div className={styles.page}>
       <div className={styles.topbar}>
-        <h1 className={styles.pageTitle}>Admin — API Key Logs</h1>
+        <h1 className={styles.pageTitle}>{t('admin.logs.breadcrumb')}</h1>
         <div className={styles.topbarActions}>
           <button className={styles.navBtn} onClick={() => navigate('/admin/users')}>
-            Users
+            {t('nav.admin_users')}
           </button>
           <button className={styles.navBtn} onClick={() => navigate('/admin/deals')}>
-            Deals
+            {t('nav.admin_logs')}
           </button>
-          <button className={styles.logoutBtn} onClick={logout}>Logout</button>
+          <button className={styles.logoutBtn} onClick={logout}>{t('nav.logout')}</button>
         </div>
       </div>
 
       {loading ? (
-        <div className={styles.empty}>Loading…</div>
+        <div className={styles.empty}>{t('common.loading')}</div>
       ) : (
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead>
               <tr>
                 <th>#</th>
-                <th>Username</th>
-                <th>Key Type</th>
-                <th>Purpose</th>
-                <th>Used At</th>
+                <th>{t('admin.logs.table.username')}</th>
+                <th>{t('admin.logs.table.key_type')}</th>
+                <th>{t('admin.logs.table.purpose')}</th>
+                <th>{t('admin.logs.table.timestamp')}</th>
               </tr>
             </thead>
             <tbody>
               {logs.length === 0 && (
-                <tr><td colSpan={5} className={styles.empty}>No logs yet</td></tr>
+                <tr><td colSpan={5} className={styles.empty}>{t('admin.logs.table.no_logs')}</td></tr>
               )}
               {logs.map((l) => (
                 <tr key={l.id}>
@@ -71,7 +73,7 @@ export default function AdminLogs() {
                     </span>
                   </td>
                   <td>{l.purpose}</td>
-                  <td>{new Date(l.used_at).toLocaleString('ru-RU')}</td>
+                  <td>{new Date(l.used_at).toLocaleString('en-GB')}</td>
                 </tr>
               ))}
             </tbody>

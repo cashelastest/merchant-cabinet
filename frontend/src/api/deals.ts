@@ -1,5 +1,5 @@
 import client from './client';
-import type { Deal } from '../types';
+import type { Deal, User } from '../types';
 
 export interface DealFilters {
   deal_id?: number;
@@ -13,6 +13,12 @@ export const getDeals = (filters: DealFilters = {}) => {
   );
   return client.get<Deal[]>('/deals', { params }).then((r) => r.data);
 };
+
+export const getUser = (userId: number) =>
+  client.get<User>(`/users/${userId}`).then((r) => r.data).catch(() => null);
+
+export const getUsers = () =>
+  client.get<User[]>('/users').then((r) => r.data).catch(() => []);
 
 export const acceptDeal = (id: number) =>
   client.post<{ id: number; status: string }>(`/deal/${id}/accept`).then((r) => r.data);
