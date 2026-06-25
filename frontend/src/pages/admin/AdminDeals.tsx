@@ -1,6 +1,8 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import adminClient from '../../api/adminClient';
+import LanguageSwitcher from '../../components/LanguageSwitcher/LanguageSwitcher';
 import styles from './Admin.module.css';
 
 interface AdminDeal {
@@ -12,9 +14,18 @@ interface AdminDeal {
   to_values: Record<string, unknown>;
   status: string;
   accepted_by: number | null;
+  accepted_by_username?: string | null;
   accepted_at: string | null;
   received_at: string | null;
   created_at: string;
+}
+
+interface AdminUser {
+  id: number;
+  username: string;
+  balance: number;
+  is_active: boolean;
+  currencies: string[];
 }
 
 function fmt(iso: string | null): string {
@@ -23,10 +34,12 @@ function fmt(iso: string | null): string {
 }
 
 export default function AdminDeals() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [deals, setDeals] = useState<AdminDeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
   const [dateFrom, setDateFrom] = useState(today);
@@ -71,18 +84,28 @@ export default function AdminDeals() {
     navigate('/admin/login');
   };
 
+  const handleUserClick = async (userId: number) => {
+    try {
+      const user = await adminClient.get<AdminUser>(`/admin/users/${userId}`).then((r) => r.data);
+      setSelectedUser(user);
+    } catch {
+      alert('Failed to load user details');
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.topbar}>
-        <h1 className={styles.pageTitle}>Admin — Deals History</h1>
+        <h1 className={styles.pageTitle}>{t('admin.deals.breadcrumb')}</h1>
         <div className={styles.topbarActions}>
+          <LanguageSwitcher />
           <button className={styles.navBtn} onClick={() => navigate('/admin/users')}>
-            Users
+            {t('nav.admin_users')}
           </button>
           <button className={styles.navBtn} onClick={() => navigate('/admin/logs')}>
-            Logs
+            {t('nav.admin_logs')}
           </button>
-          <button className={styles.logoutBtn} onClick={logout}>Logout</button>
+          <button className={styles.logoutBtn} onClick={logout}>{t('nav.logout')}</button>
         </div>
       </div>
 
@@ -151,6 +174,7 @@ export default function AdminDeals() {
                 <th>Recipient</th>
                 <th>Amount</th>
                 <th>Status</th>
+                <th>{t('admin.deals.table.accepted_by')}</th>
                 <th>Accepted At</th>
                 <th>Received At</th>
               </tr>
@@ -170,6 +194,15 @@ export default function AdminDeals() {
                         {d.status}
                       </span>
                     </td>
+                    <td>
+                      {d.accepted_by_username && d.accepted_by ? (
+                        <span style={{ color: '#60a5fa', cursor: 'pointer' }} onClick={() => handleUserClick(d.accepted_by!)}>
+                          {d.accepted_by_username}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#666' }}>—</span>
+                      )}
+                    </td>
                     <td>{fmt(d.accepted_at)}</td>
                     <td>{fmt(d.received_at)}</td>
                   </tr>
@@ -177,6 +210,40 @@ export default function AdminDeals() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {selectedUser && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+        }} onClick={() => setSelectedUser(null)}>
+          <div style={{
+            backgroundColor: '#1a1a1a', color: '#fff', padding: '20px', borderRadius: '8px',
+            maxWidth: '500px', width: '90%', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '15px' }}>
+              {t('user_details.title')}
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <strong>{t('user_details.username')}:</strong> {selectedUser.username}
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <strong>{t('user_details.balance')}:</strong> {selectedUser.balance}
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <strong>{t('user_details.status')}:</strong> {selectedUser.is_active ? t('user_details.active') : t('user_details.inactive')}
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <strong>{t('user_details.payout_currencies')}:</strong> {selectedUser.currencies.join(', ')}
+            </div>
+            <button onClick={() => setSelectedUser(null)} style={{
+              backgroundColor: '#2a2a2a', color: '#fff', border: 'none', padding: '8px 16px',
+              borderRadius: '4px', cursor: 'pointer', marginTop: '10px',
+            }}>
+              {t('common.close')}
+            </button>
+          </div>
         </div>
       )}
     </div>

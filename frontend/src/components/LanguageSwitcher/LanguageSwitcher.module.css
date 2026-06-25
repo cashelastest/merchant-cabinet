@@ -1,9 +1,4 @@
-.switcher {
-  display: flex;
-  gap: 4px;
-}
-
-.btn {
+.select {
   padding: 6px 10px;
   background-color: #2a2a2a;
   color: #ccc;
@@ -15,14 +10,20 @@
   transition: all 0.2s;
 }
 
-.btn:hover {
+.select:hover {
   background-color: #333;
   color: #fff;
   border-color: #555;
 }
 
-.btn.active {
-  background-color: #0066cc;
-  color: #fff;
+.select:focus {
+  outline: none;
+  background-color: #333;
   border-color: #0066cc;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+}
+
+.select option {
+  background-color: #1a1a1a;
+  color: #fff;
 }

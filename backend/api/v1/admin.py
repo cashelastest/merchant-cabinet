@@ -46,6 +46,25 @@ async def list_users(
     ]
 
 
+@router.get("/users/{user_id}")
+async def get_user(
+    user_id: int,
+    _: User = Depends(require_admin),
+    service: UserService = Depends(get_user_service),
+):
+    user = await service.repository.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id": user.id,
+        "username": user.username,
+        "is_active": user.is_active,
+        "is_admin": user.is_admin,
+        "balance": 0,
+        "currencies": [c.xml for c in user.currencies],
+    }
+
+
 @router.patch("/users/{user_id}/currencies")
 async def set_user_currencies(
     user_id: int,
@@ -188,3 +207,59 @@ async def delete_user(
     await session.delete(user)
     await session.commit()
     return {"id": user_id, "deleted": True}
+
+
+@router.get("/deals")
+async def list_deals_admin(
+    _: User = Depends(require_admin),
+    today: bool = Query(False),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    session: AsyncSession = Depends(get_session),
+):
+    query = select(Deal).order_by(Deal.created_at.desc())
+
+    if today:
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        query = query.where(Deal.created_at >= today_start)
+    else:
+        if date_from:
+            start_date = datetime.fromisoformat(date_from)
+            query = query.where(Deal.created_at >= start_date)
+        if date_to:
+            end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
+            query = query.where(Deal.created_at < end_date)
+
+    if status:
+        query = query.where(Deal.status == status)
+
+    result = await session.execute(query)
+    deals = result.scalars().all()
+
+    from repositories.user import UserRepository
+    user_repo = UserRepository(session)
+
+    response = []
+    for deal in deals:
+        deal_dict = {
+            "id": deal.id,
+            "uid": deal.uid,
+            "from_xml": deal.from_xml,
+            "from_name": deal.from_name,
+            "to_name": deal.to_name,
+            "to_values": deal.to_values,
+            "status": deal.status,
+            "accepted_by": deal.accepted_by,
+            "accepted_by_username": None,
+            "accepted_at": deal.accepted_at.isoformat() if deal.accepted_at else None,
+            "received_at": deal.received_at.isoformat() if deal.received_at else None,
+            "created_at": deal.created_at.isoformat() if deal.created_at else None,
+        }
+        if deal.accepted_by:
+            accepted_user = await user_repo.get_by_id(deal.accepted_by)
+            if accepted_user:
+                deal_dict["accepted_by_username"] = accepted_user.username
+        response.append(deal_dict)
+
+    return response
