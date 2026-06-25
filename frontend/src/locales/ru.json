@@ -1,0 +1,168 @@
+{
+  "common": {
+    "search": "Поиск",
+    "reset": "Сброс",
+    "loading": "Загрузка…",
+    "no_data": "Данные не найдены",
+    "edit": "Редактировать",
+    "delete": "Удалить",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "close": "Закрыть",
+    "yes": "Да",
+    "no": "Нет",
+    "details": "Детали",
+    "status": "Статус"
+  },
+  "nav": {
+    "active_deals": "Активные заявки",
+    "history": "История",
+    "logout": "Выход",
+    "admin_users": "Пользователи",
+    "admin_logs": "Логи",
+    "dashboard": "Панель управления"
+  },
+  "deals": {
+    "breadcrumb": "Заявки / Список",
+    "filters": {
+      "request_id": "ID заявки",
+      "currency": "Валюта (from_xml)"
+    },
+    "table": {
+      "request_id": "ID заявки",
+      "status": "Статус",
+      "currency": "Валюта",
+      "country": "Страна",
+      "wallet": "USDT кошелёк",
+      "amount": "Сумма",
+      "accepted_by": "Принял пользователь",
+      "created": "Создана"
+    },
+    "status_badge": {
+      "accepted": "ПРИНЯТА",
+      "refused": "ОТКЛОНЕНА",
+      "pending": "ОЖИДАНИЕ",
+      "in_progress": "В ОБРАБОТКЕ"
+    },
+    "buttons": {
+      "accept": "Принять",
+      "refuse": "Отклонить",
+      "complete": "Завершить"
+    }
+  },
+  "history": {
+    "breadcrumb": "История / Список",
+    "filters": {
+      "request_id": "ID заявки",
+      "currency": "Валюта (from_xml)",
+      "all_statuses": "Все статусы",
+      "completed": "Выполнена",
+      "rejected": "Отклонена"
+    },
+    "table": {
+      "request_id": "ID заявки",
+      "status": "Статус",
+      "currency": "Валюта",
+      "country": "Страна",
+      "wallet": "USDT кошелёк",
+      "amount": "Сумма",
+      "accepted_by": "Принял пользователь",
+      "created": "Создана"
+    },
+    "status_label": {
+      "accepted": "ВЫПОЛНЕНА",
+      "refused": "ОТКЛОНЕНА"
+    }
+  },
+  "admin": {
+    "users": {
+      "breadcrumb": "Админ / Пользователи",
+      "title": "Управление пользователями",
+      "create_user": "Создать пользователя",
+      "edit_user": "Редактировать пользователя",
+      "delete_user": "Удалить пользователя",
+      "delete_confirmation": "Вы уверены, что хотите удалить этого пользователя?",
+      "username": "Имя пользователя",
+      "password": "Пароль",
+      "api_key": "API ключ",
+      "secret": "Секрет",
+      "currencies": "Валюты выплаты",
+      "status": "Статус",
+      "active": "Активен",
+      "inactive": "Неактивен",
+      "make_active": "Активировать",
+      "make_inactive": "Деактивировать",
+      "table": {
+        "id": "ID",
+        "username": "Имя пользователя",
+        "api_key": "API ключ",
+        "status": "Статус",
+        "currencies": "Валюты выплаты",
+        "actions": "Действия",
+        "edit": "Редактировать",
+        "delete": "Удалить"
+      },
+      "messages": {
+        "success": "Пользователь успешно сохранен",
+        "deleted": "Пользователь успешно удален",
+        "error": "Ошибка при сохранении пользователя"
+      },
+      "modal": {
+        "title_create": "Создать пользователя",
+        "title_edit": "Редактировать пользователя",
+        "placeholder_username": "Введите имя пользователя",
+        "placeholder_password": "Введите пароль",
+        "placeholder_api_key": "Введите API ключ",
+        "placeholder_secret": "Введите секрет",
+        "placeholder_currencies": "Введите валюты (через запятую, например, USDT,BTC)",
+        "save": "Сохранить",
+        "cancel": "Отмена"
+      }
+    },
+    "deals": {
+      "breadcrumb": "Админ / Заявки",
+      "title": "История заявок",
+      "filters": {
+        "today_only": "Только сегодня",
+        "date_from": "От",
+        "date_to": "До",
+        "status": "Статус",
+        "all_statuses": "Все статусы"
+      },
+      "table": {
+        "id": "ID",
+        "uid": "UID",
+        "currency": "Валюта",
+        "from_name": "От",
+        "to_name": "До",
+        "amount": "Сумма",
+        "status": "Статус",
+        "accepted_by": "Принял",
+        "accepted_at": "Принято",
+        "created_at": "Создана",
+        "total_amount": "Итого"
+      }
+    },
+    "logs": {
+      "breadcrumb": "Админ / Логи API",
+      "title": "Логи использования API ключей",
+      "table": {
+        "timestamp": "Время",
+        "username": "Имя пользователя",
+        "purpose": "Цель",
+        "key_type": "Тип ключа",
+        "no_logs": "Логи не найдены"
+      }
+    }
+  },
+  "user_details": {
+    "title": "Информация о пользователе",
+    "username": "Имя пользователя",
+    "balance": "Баланс",
+    "status": "Статус",
+    "payout_currencies": "Валюты выплаты",
+    "active": "Активен",
+    "inactive": "Неактивен",
+    "created_at": "Создан"
+  }
+}

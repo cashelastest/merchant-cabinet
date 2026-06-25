@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './Header.module.css';
 import { useAuth } from '../../context/AuthContext';
 import { setMyStatus } from '../../api/auth';
 import { requestPayout } from '../../api/payout';
+import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 
 export default function Header() {
+  const { t } = useTranslation();
   const { user, logout, refreshUser } = useAuth();
   const isActive = user?.is_active ?? false;
 
@@ -104,6 +107,7 @@ export default function Header() {
         </div>
 
         <div className={styles.right}>
+          <LanguageSwitcher />
           {user && (
             <>
               <span className={`${styles.statusChip} ${isActive && !isPaused ? styles.statusActive : styles.statusPaused}`}>
@@ -182,7 +186,7 @@ export default function Header() {
 
             <div className={styles.payoutActions}>
               <button className={styles.payoutCancel} onClick={() => setShowPayout(false)}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button className={styles.payoutSubmit} onClick={handlePayoutSubmit} disabled={payoutLoading}>
                 {payoutLoading ? 'Processing…' : 'Withdraw →'}

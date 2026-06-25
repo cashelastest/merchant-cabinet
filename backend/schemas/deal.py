@@ -39,6 +39,7 @@ class DealResponse(BaseModel):
     to_image_xml: str
     status: str
     accepted_by: Optional[int] = None
+    accepted_by_username: Optional[str] = None
     accepted_at: Optional[datetime] = None
     received_at: Optional[datetime] = None
     created_at: datetime

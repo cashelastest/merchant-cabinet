@@ -12,6 +12,7 @@ from services.user import UserService
 from services.bizon import BizonService
 from schemas import LoginRequest, TokenResponse
 from models import User, ApiKeyLog
+from repositories.user import UserRepository
 
 
 class StatusUpdate(BaseModel):
@@ -76,3 +77,41 @@ async def update_status(
         "username": updated.username,
         "is_active": updated.is_active,
     }
+
+
+@router.get("/users/{user_id}")
+async def get_user(
+    user_id: int,
+    _: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    repo = UserRepository(session)
+    user = await repo.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id": user.id,
+        "username": user.username,
+        "balance": 0,
+        "is_active": user.is_active,
+        "currencies": [c.xml for c in user.currencies],
+    }
+
+
+@router.get("/users")
+async def list_users(
+    _: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    repo = UserRepository(session)
+    users = await repo.get_all()
+    return [
+        {
+            "id": u.id,
+            "username": u.username,
+            "balance": 0,
+            "is_active": u.is_active,
+            "currencies": [c.xml for c in u.currencies],
+        }
+        for u in users
+    ]
