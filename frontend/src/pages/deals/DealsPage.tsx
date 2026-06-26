@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getDeals, acceptDeal, refuseDeal, completeDeal } from '../../api/deals';
+import { getDeals } from '../../api/deals';
 import type { Deal } from '../../types';
 import CountdownTimer from '../../components/CountdownTimer/CountdownTimer';
 import styles from './DealsPage.module.css';
@@ -27,8 +27,6 @@ export default function DealsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterXml, setFilterXml] = useState('');
 
-  // action loading per deal
-  const [acting, setActing] = useState<Record<number, boolean>>({});
 
   const wsRef = useRef<WebSocket | null>(null);
 

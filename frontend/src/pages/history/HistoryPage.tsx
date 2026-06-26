@@ -131,7 +131,6 @@ export default function HistoryPage() {
           </tbody>
         </table>
       </div>
-
     </div>
   );
 }
