@@ -190,9 +190,32 @@ export default function AdminDeals() {
                     <td>{d.to_name}</td>
                     <td>{typeof amount === 'number' ? amount.toLocaleString() : '—'} {d.from_xml}</td>
                     <td>
-                      <span className={d.status === 'accepted' ? styles.badgeActive : styles.badgePaused}>
-                        {d.status}
-                      </span>
+                      <select
+                        value={d.status}
+                        onChange={(e) => {
+                          const newStatus = e.target.value;
+                          adminClient.patch(`/deals/${d.id}/status?status=${newStatus}`).catch(() => {
+                            alert('Failed to update status');
+                          });
+                          setDeals((prev) => prev.map((deal) =>
+                            deal.id === d.id ? { ...deal, status: newStatus } : deal
+                          ));
+                        }}
+                        style={{
+                          backgroundColor: d.status === 'accepted' ? '#1a4d1a' : d.status === 'refused' ? '#4d1a1a' : '#2a2a2a',
+                          color: d.status === 'accepted' ? '#4ade80' : d.status === 'refused' ? '#f87171' : '#ccc',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '6px 10px',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        <option value="pending">pending</option>
+                        <option value="in_progress">in_progress</option>
+                        <option value="accepted">accepted</option>
+                        <option value="refused">refused</option>
+                      </select>
                     </td>
                     <td>
                       {d.accepted_by_username && d.accepted_by ? (

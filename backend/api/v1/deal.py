@@ -111,6 +111,30 @@ async def complete_deal(
     return {"id": deal.id, "status": deal.status}
 
 
+@router.patch("/deal/{deal_id}/status")
+async def update_deal_status(
+    deal_id: int,
+    status: str,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    from sqlalchemy import select
+    from models import Deal
+
+    stmt = select(Deal).where(Deal.id == deal_id)
+    result = await session.execute(stmt)
+    deal = result.scalar_one_or_none()
+
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+
+    deal.status = status
+    await session.commit()
+    await session.refresh(deal)
+
+    return {"id": deal.id, "status": deal.status}
+
+
 @router.websocket("/ws/deals")
 async def deals_ws(
     websocket: WebSocket,
