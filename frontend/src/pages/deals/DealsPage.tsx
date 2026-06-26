@@ -133,16 +133,6 @@ export default function DealsPage() {
     fetchDeals();
   };
 
-  const act = async (id: number, fn: (id: number) => Promise<{ id: number; status: string }>) => {
-    setActing((p) => ({ ...p, [id]: true }));
-    try {
-      const updated = await fn(id);
-      setDeals((prev) => prev.map((d) => (d.id === id ? { ...d, status: updated.status } : d)));
-    } finally {
-      setActing((p) => ({ ...p, [id]: false }));
-    }
-  };
-
   return (
     <div className={styles.page}>
       <div className={styles.breadcrumb}>{t('deals.breadcrumb')}</div>
@@ -187,31 +177,33 @@ export default function DealsPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>{t('deals.table.status')}</th>
-              <th>{t('common.details')}</th>
+              <th>Change Status</th>
+              <th>Receipts</th>
+              <th>Estimate</th>
               <th>{t('deals.table.request_id')}</th>
               <th>{t('deals.table.status')}</th>
               <th>{t('deals.table.currency')}</th>
-              <th>{t('deals.table.country')}</th>
-              <th>{t('deals.table.wallet')}</th>
+              <th>Card Holder</th>
+              <th>Card Number</th>
+              <th>Phone Number</th>
+              <th>External Bank Name</th>
               <th>{t('deals.table.amount')}</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} className={styles.emptyState}>{t('common.loading')}</td>
+                <td colSpan={11} className={styles.emptyState}>{t('common.loading')}</td>
               </tr>
             )}
             {!loading && deals.length === 0 && (
               <tr>
-                <td colSpan={8} className={styles.emptyState}>{t('common.no_data')}</td>
+                <td colSpan={11} className={styles.emptyState}>{t('common.no_data')}</td>
               </tr>
             )}
             {!loading && deals.map((deal) => {
               const isPending    = deal.status === 'pending';
               const isInProgress = deal.status === 'in_progress';
-              const busy = acting[deal.id];
               const sc = STATUS_COLORS[deal.status];
               const tv = deal.to_values;
 
@@ -222,17 +214,23 @@ export default function DealsPage() {
                       <>
                         <button
                           className={styles.btnAccept}
-                          onClick={() => act(deal.id, acceptDeal)}
-                          disabled={busy}
+                          onClick={() => {
+                            setDeals((prev) => prev.map((d) => d.id === deal.id ? { ...d, status: 'in_progress' } : d));
+                          }}
+                          disabled={false}
+                          title="Accept"
                         >
-                          {t('deals.buttons.accept')}
+                          ✓
                         </button>
                         <button
                           className={styles.btnRefuse}
-                          onClick={() => act(deal.id, refuseDeal)}
-                          disabled={busy}
+                          onClick={() => {
+                            setDeals((prev) => prev.map((d) => d.id === deal.id ? { ...d, status: 'refused' } : d));
+                          }}
+                          disabled={false}
+                          title="Refuse"
                         >
-                          {t('deals.buttons.refuse')}
+                          ✕
                         </button>
                       </>
                     )}
@@ -240,21 +238,19 @@ export default function DealsPage() {
                       <>
                         <button
                           className={styles.btnComplete}
-                          onClick={() => act(deal.id, completeDeal)}
-                          disabled={busy}
+                          onClick={() => {
+                            setDeals((prev) => prev.map((d) => d.id === deal.id ? { ...d, status: 'accepted' } : d));
+                          }}
+                          disabled={false}
+                          title="Complete"
                         >
-                          {t('deals.buttons.complete')}
-                        </button>
-                        <button
-                          className={styles.btnCancel}
-                          onClick={() => act(deal.id, refuseDeal)}
-                          disabled={busy}
-                        >
-                          {t('deals.buttons.refuse')}
+                          ✓
                         </button>
                       </>
                     )}
                   </td>
+
+                  <td className={styles.cell}>—</td>
 
                   <td className={styles.timerCell}>
                     {isPending && (
@@ -262,7 +258,7 @@ export default function DealsPage() {
                     )}
                   </td>
 
-                  <td className={styles.idCell}>#{deal.id} / uid:{deal.uid}</td>
+                  <td className={styles.idCell}>#{deal.id}</td>
 
                   <td>
                     <span className={styles.statusBadge} style={{ backgroundColor: sc.bg, color: sc.color }}>
@@ -271,8 +267,10 @@ export default function DealsPage() {
                   </td>
 
                   <td className={styles.cell}>{deal.from_xml}</td>
-                  <td className={styles.cell}>{getValue(tv, 'country')}</td>
-                  <td className={styles.walletCell}>{getValue(tv, 'usdtWallet')}</td>
+                  <td className={styles.cell}>{getValue(tv, 'cardHolder')}</td>
+                  <td className={styles.cell}>{getValue(tv, 'cardNumber')}</td>
+                  <td className={styles.cell}>{getValue(tv, 'phoneNumber')}</td>
+                  <td className={styles.cell}>{getValue(tv, 'bankName')}</td>
                   <td className={styles.amountCell}>{getValue(tv, 'outAmount')} {deal.from_xml}</td>
                 </tr>
               );
