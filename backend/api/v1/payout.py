@@ -151,16 +151,15 @@ async def update_payout_status(
 
 
 @router.websocket("/ws/payouts")
-async def payouts_ws(
-    websocket: WebSocket,
-    token: str = Query(...),
-    session: AsyncSession = Depends(get_session),
-):
+async def payouts_ws(websocket: WebSocket):
     from repositories.user import UserRepository
     import jwt
     from core.config import SECRET_KEY
+    from core.dependencies import SessionLocal
 
-    # Manual token validation for WebSocket
+    # Extract token from query parameters
+    token = websocket.query_params.get("token")
+
     if not token:
         await websocket.close(code=1008, reason="No token provided")
         return
@@ -168,20 +167,22 @@ async def payouts_ws(
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id = int(payload["sub"])
-        user = await UserRepository(session).get_with_currencies(user_id)
-        if not user:
-            await websocket.close(code=1008, reason="User not found")
-            return
+
+        async with SessionLocal() as session:
+            user = await UserRepository(session).get_with_currencies(user_id)
+            if not user:
+                await websocket.close(code=1008, reason="User not found")
+                return
     except Exception:
         await websocket.close(code=1008, reason="Invalid token")
         return
 
-    await payout_manager.connect(websocket, user.id)
+    await payout_manager.connect(websocket, user_id)
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        payout_manager.disconnect(websocket, user.id)
+        payout_manager.disconnect(websocket, user_id)
 
 
 @router.post("/{payout_id}/receipt/")
