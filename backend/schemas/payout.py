@@ -25,6 +25,11 @@ class PayoutResponse(BaseModel):
     id: int
     amount: float
     wallet_address: str
+    currency: str = "USDT"
+    card_holder: Optional[str] = None
+    card_number: Optional[str] = None
+    phone_number: Optional[str] = None
+    bank_name: Optional[str] = None
     status: str
     created_at: datetime
     redirect_url: str
