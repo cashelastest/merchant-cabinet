@@ -2,11 +2,13 @@
 
 from datetime import date, datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+import os
+import uuid
 
 from core.dependencies import get_user_service, require_admin, get_session
 from services.user import UserService
@@ -263,3 +265,46 @@ async def list_deals_admin(
         response.append(deal_dict)
 
     return response
+
+
+@router.post("/deals/{deal_id}/receipt")
+async def upload_receipt(
+    deal_id: int,
+    file: UploadFile = File(...),
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    from models import Deal
+
+    deal = await session.get(Deal, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+
+    os.makedirs("receipts", exist_ok=True)
+    filename = f"{uuid.uuid4()}_{file.filename}"
+    filepath = os.path.join("receipts", filename)
+
+    contents = await file.read()
+    with open(filepath, "wb") as f:
+        f.write(contents)
+
+    url = f"/receipts/{filename}"
+    deal.receipt_url = url
+    await session.commit()
+
+    return {"url": url}
+
+
+@router.get("/deals/{deal_id}/receipt")
+async def get_receipt(
+    deal_id: int,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    from models import Deal
+
+    deal = await session.get(Deal, deal_id)
+    if not deal or not deal.receipt_url:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    return {"url": deal.receipt_url}

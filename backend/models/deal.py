@@ -28,5 +28,6 @@ class Deal(Base):
     received_at: Mapped[Optional[datetime]]
     created_at: Mapped[datetime]
     updated_at: Mapped[Optional[datetime]]
+    receipt_url: Mapped[Optional[str]] = mapped_column(nullable=True)
 
 

@@ -18,6 +18,7 @@ interface AdminDeal {
   accepted_at: string | null;
   received_at: string | null;
   created_at: string;
+  receipt_url?: string | null;
 }
 
 interface AdminUser {
@@ -40,6 +41,8 @@ export default function AdminDeals() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [uploadingReceipt, setUploadingReceipt] = useState<Record<number, boolean>>({});
+  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
   const [dateFrom, setDateFrom] = useState(today);
@@ -90,6 +93,22 @@ export default function AdminDeals() {
       setSelectedUser(user);
     } catch {
       alert('Failed to load user details');
+    }
+  };
+
+  const handleUploadReceipt = async (dealId: number, file: File) => {
+    setUploadingReceipt((p) => ({ ...p, [dealId]: true }));
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await adminClient.post<{ url: string }>(`/admin/deals/${dealId}/receipt`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, receipt_url: response.data.url } : d));
+    } catch {
+      alert('Failed to upload receipt');
+    } finally {
+      setUploadingReceipt((p) => ({ ...p, [dealId]: false }));
     }
   };
 
@@ -177,6 +196,7 @@ export default function AdminDeals() {
                 <th>{t('admin.deals.table.accepted_by')}</th>
                 <th>Accepted At</th>
                 <th>Received At</th>
+                <th>Receipt</th>
               </tr>
             </thead>
             <tbody>
@@ -190,32 +210,9 @@ export default function AdminDeals() {
                     <td>{d.to_name}</td>
                     <td>{typeof amount === 'number' ? amount.toLocaleString() : '—'} {d.from_xml}</td>
                     <td>
-                      <select
-                        value={d.status}
-                        onChange={(e) => {
-                          const newStatus = e.target.value;
-                          adminClient.patch(`/deals/${d.id}/status?status=${newStatus}`).catch(() => {
-                            alert('Failed to update status');
-                          });
-                          setDeals((prev) => prev.map((deal) =>
-                            deal.id === d.id ? { ...deal, status: newStatus } : deal
-                          ));
-                        }}
-                        style={{
-                          backgroundColor: d.status === 'accepted' ? '#1a4d1a' : d.status === 'refused' ? '#4d1a1a' : '#2a2a2a',
-                          color: d.status === 'accepted' ? '#4ade80' : d.status === 'refused' ? '#f87171' : '#ccc',
-                          border: 'none',
-                          borderRadius: '4px',
-                          padding: '6px 10px',
-                          cursor: 'pointer',
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        <option value="pending">pending</option>
-                        <option value="in_progress">in_progress</option>
-                        <option value="accepted">accepted</option>
-                        <option value="refused">refused</option>
-                      </select>
+                      <span className={d.status === 'accepted' ? styles.badgeActive : styles.badgePaused}>
+                        {d.status}
+                      </span>
                     </td>
                     <td>
                       {d.accepted_by_username && d.accepted_by ? (
@@ -228,6 +225,36 @@ export default function AdminDeals() {
                     </td>
                     <td>{fmt(d.accepted_at)}</td>
                     <td>{fmt(d.received_at)}</td>
+                    <td style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <label style={{
+                        backgroundColor: '#0066cc', color: '#fff', padding: '6px 12px',
+                        borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
+                        border: 'none', display: 'block',
+                      }}>
+                        {uploadingReceipt[d.id] ? 'Uploading...' : 'Upload'}
+                        <input
+                          type="file"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUploadReceipt(d.id, file);
+                          }}
+                          style={{ display: 'none' }}
+                          disabled={uploadingReceipt[d.id]}
+                        />
+                      </label>
+                      {d.receipt_url && (
+                        <button
+                          onClick={() => setViewingReceipt(d.receipt_url!)}
+                          style={{
+                            backgroundColor: '#4ade80', color: '#000', padding: '6px 12px',
+                            borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
+                            border: 'none',
+                          }}
+                        >
+                          View
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -266,6 +293,33 @@ export default function AdminDeals() {
             }}>
               {t('common.close')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {viewingReceipt && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001,
+        }} onClick={() => setViewingReceipt(null)}>
+          <div style={{
+            backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px',
+            maxWidth: '600px', width: '90%', maxHeight: '80vh', overflow: 'auto',
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 style={{ margin: 0, color: '#fff' }}>Receipt</h3>
+              <button onClick={() => setViewingReceipt(null)} style={{
+                backgroundColor: '#2a2a2a', color: '#fff', border: 'none', padding: '8px 12px',
+                borderRadius: '4px', cursor: 'pointer',
+              }}>
+                ✕
+              </button>
+            </div>
+            {viewingReceipt.endsWith('.pdf') ? (
+              <embed src={viewingReceipt} type="application/pdf" style={{ width: '100%', height: '500px' }} />
+            ) : (
+              <img src={viewingReceipt} alt="receipt" style={{ width: '100%', borderRadius: '4px' }} />
+            )}
           </div>
         </div>
       )}
