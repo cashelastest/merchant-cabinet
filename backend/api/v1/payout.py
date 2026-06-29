@@ -155,21 +155,30 @@ async def update_payout_status(
 async def payouts_ws(websocket: WebSocket, token: str = Query()):
     import logging
     logger = logging.getLogger(__name__)
+    logger.info(f"[PAYOUT WS] Connection attempt, token={token[:20]}...")
 
     await websocket.accept()
+    logger.info(f"[PAYOUT WS] Connection accepted")
 
     try:
         user_id = _decode_token(token)
+        logger.info(f"[PAYOUT WS] Token decoded, user_id={user_id}")
         session = SessionLocal()
         user = await UserRepository(session).get_with_currencies(user_id)
         if not user:
+            logger.info(f"[PAYOUT WS] User not found for id={user_id}")
             await websocket.close(code=1008, reason="User not found")
             return
-    except HTTPException:
+    except HTTPException as e:
+        logger.info(f"[PAYOUT WS] HTTPException: {e.detail}")
         await websocket.close(code=1008, reason="Invalid token")
         return
+    except Exception as e:
+        logger.error(f"[PAYOUT WS] Exception: {e}", exc_info=True)
+        await websocket.close(code=1008, reason="Error")
+        return
 
-    logger.info(f"WebSocket /ws/payouts connected for user {user.id}")
+    logger.info(f"[PAYOUT WS] Connected for user {user.id}")
 
     try:
         while True:
