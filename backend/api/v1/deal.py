@@ -1,12 +1,12 @@
 """Deal router."""
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query
 from typing import Optional
 import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.ws_manager import manager
-from core.dependencies import get_current_user, get_current_user_ws, get_deal_service, redis_service, get_session
+from core.dependencies import get_current_user, get_deal_service, redis_service, get_session, _decode_token, SessionLocal
 from services.deal import DealService
 from models import User
 from schemas import DealCreateRequest, DealResponse
@@ -136,10 +136,18 @@ async def update_deal_status(
 
 
 @router.websocket("/ws/deals")
-async def deals_ws(
-    websocket: WebSocket,
-    user: User = Depends(get_current_user_ws),
-) -> None:
+async def deals_ws(websocket: WebSocket, token: str = Query()) -> None:
+    try:
+        user_id = _decode_token(token)
+        session = SessionLocal()
+        user = await UserRepository(session).get_with_currencies(user_id)
+        if not user:
+            await websocket.close(code=1008, reason="User not found")
+            return
+    except HTTPException:
+        await websocket.close(code=1008, reason="Invalid token")
+        return
+
     xml_codes = {c.xml for c in user.currencies}
     await manager.connect(websocket, xml_codes, is_active=user.is_active, is_admin=user.is_admin)
 

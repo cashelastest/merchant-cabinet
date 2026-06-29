@@ -6,9 +6,10 @@ import json
 import aiofiles
 from pathlib import Path
 
-from core.dependencies import get_current_user, get_session
+from core.dependencies import get_current_user, get_session, _decode_token, SessionLocal
 from models import User
 from repositories.payout import PayoutRepository
+from repositories.user import UserRepository
 from schemas import PayoutRequest, PayoutResponse
 
 router = APIRouter(prefix="/payout")
@@ -151,20 +152,29 @@ async def update_payout_status(
 
 
 @router.websocket("/ws/payouts")
-async def payouts_ws(websocket: WebSocket):
+async def payouts_ws(websocket: WebSocket, token: str = Query()):
     import logging
     logger = logging.getLogger(__name__)
-    logger.info("WebSocket /ws/payouts connection attempt - no deps")
+
+    try:
+        user_id = _decode_token(token)
+        session = SessionLocal()
+        user = await UserRepository(session).get_with_currencies(user_id)
+        if not user:
+            await websocket.close(code=1008, reason="User not found")
+            return
+    except HTTPException:
+        await websocket.close(code=1008, reason="Invalid token")
+        return
 
     await websocket.accept()
-    logger.info("WebSocket accepted")
-    logger.info("WebSocket connected")
+    logger.info(f"WebSocket /ws/payouts connected for user {user.id}")
 
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        logger.info("WebSocket disconnected")
+        logger.info(f"WebSocket /ws/payouts disconnected for user {user.id}")
         pass
 
 
