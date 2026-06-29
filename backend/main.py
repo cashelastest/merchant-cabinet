@@ -2,6 +2,8 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from core.dependencies import engine, redis_service, SessionLocal
 from core.config import ADMIN_USERNAME, ADMIN_PASSWORD
@@ -51,3 +53,7 @@ app.include_router(deal_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(payout_router, prefix="/api/v1")
+
+uploads_path = Path("/app/uploads")
+uploads_path.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")
