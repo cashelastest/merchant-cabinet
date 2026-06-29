@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import adminClient from '../../api/adminClient';
-import LanguageSwitcher from '../../components/LanguageSwitcher/LanguageSwitcher';
 import styles from './PayoutPage.module.css';
 
 interface Payout {
@@ -12,6 +11,11 @@ interface Payout {
   status: string;
   created_at: string;
 }
+
+const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+  pending:    { bg: '#2d2a1a', color: '#fbbf24' },
+  completed: { bg: '#1a4d1a', color: '#4ade80' },
+};
 
 export default function PayoutPage() {
   const { t } = useTranslation();
@@ -28,8 +32,6 @@ export default function PayoutPage() {
         .get<Payout[]>('/payout/')
         .then((r) => r.data);
       setPayouts(data);
-    } catch {
-      console.error('Failed to load payouts');
     } finally {
       setLoading(false);
     }
@@ -48,7 +50,7 @@ export default function PayoutPage() {
               <th>ID</th>
               <th>Amount</th>
               <th>Currency</th>
-              <th>Wallet</th>
+              <th>Wallet Address</th>
               <th>Status</th>
               <th>Created</th>
             </tr>
@@ -64,20 +66,23 @@ export default function PayoutPage() {
                 <td colSpan={6} className={styles.emptyState}>No payouts</td>
               </tr>
             )}
-            {!loading && payouts.map((p) => (
-              <tr key={p.id}>
-                <td>#{p.id}</td>
-                <td>{p.amount.toLocaleString()}</td>
-                <td>{p.currency}</td>
-                <td className={styles.wallet}>{p.wallet_address.substring(0, 16)}...</td>
-                <td>
-                  <span className={p.status === 'pending' ? styles.badgePending : styles.badgeCompleted}>
-                    {p.status}
-                  </span>
-                </td>
-                <td>{fmt(p.created_at)}</td>
-              </tr>
-            ))}
+            {!loading && payouts.map((p) => {
+              const sc = STATUS_COLORS[p.status] || { bg: '#1a3a4d', color: '#60a5fa' };
+              return (
+                <tr key={p.id}>
+                  <td className={styles.idCell}>#{p.id}</td>
+                  <td className={styles.cell}>{p.amount.toLocaleString()}</td>
+                  <td className={styles.cell}>{p.currency}</td>
+                  <td className={styles.cell}>{p.wallet_address.substring(0, 20)}...</td>
+                  <td>
+                    <span className={styles.statusBadge} style={{ backgroundColor: sc.bg, color: sc.color }}>
+                      {p.status}
+                    </span>
+                  </td>
+                  <td className={styles.cell}>{fmt(p.created_at)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
