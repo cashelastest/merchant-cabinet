@@ -3,7 +3,7 @@ import type { Deal } from './types'
 const BASE = '/api/v1'
 
 function getToken(): string {
-  return localStorage.getItem('token') ?? ''
+  return localStorage.getItem('merchantToken') ?? localStorage.getItem('token') ?? ''
 }
 
 function authHeaders(): HeadersInit {
