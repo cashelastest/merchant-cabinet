@@ -6,7 +6,7 @@ import json
 import aiofiles
 from pathlib import Path
 
-from core.dependencies import get_current_user, get_session, get_current_user_ws
+from core.dependencies import get_current_user, get_session
 from models import User
 from repositories.payout import PayoutRepository
 from schemas import PayoutRequest, PayoutResponse
@@ -151,25 +151,21 @@ async def update_payout_status(
 
 
 @router.websocket("/ws/payouts")
-async def payouts_ws(
-    websocket: WebSocket,
-    user: User = Depends(get_current_user_ws),
-):
+async def payouts_ws(websocket: WebSocket):
     import logging
     logger = logging.getLogger(__name__)
-    logger.info(f"WebSocket /ws/payouts connection attempt for user {user.id}")
+    logger.info("WebSocket /ws/payouts connection attempt - no deps")
 
     await websocket.accept()
     logger.info("WebSocket accepted")
+    logger.info("WebSocket connected")
 
-    logger.info(f"Connected: user_id={user.id}")
-    await payout_manager.connect(websocket, user.id)
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        logger.info(f"Disconnected: user_id={user.id}")
-        payout_manager.disconnect(websocket, user.id)
+        logger.info("WebSocket disconnected")
+        pass
 
 
 @router.post("/{payout_id}/receipt/")
