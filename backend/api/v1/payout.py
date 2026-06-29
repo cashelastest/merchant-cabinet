@@ -1,12 +1,12 @@
 """Payout router."""
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 import json
 import aiofiles
 from pathlib import Path
 
-from core.dependencies import get_current_user, get_session, get_current_user_ws
+from core.dependencies import get_current_user, get_session
 from models import User
 from repositories.payout import PayoutRepository
 from schemas import PayoutRequest, PayoutResponse
@@ -153,7 +153,7 @@ async def update_payout_status(
 @router.websocket("/ws/payouts")
 async def payouts_ws(
     websocket: WebSocket,
-    token: str = None,
+    token: str = Query(...),
     session: AsyncSession = Depends(get_session),
 ):
     from repositories.user import UserRepository
