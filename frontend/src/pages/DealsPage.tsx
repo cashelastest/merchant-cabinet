@@ -22,6 +22,10 @@ export default function DealsPage({ onLogout }: Props) {
   const [showPayout, setShowPayout] = useState(false)
   const [payoutAmount, setPayoutAmount] = useState('')
   const [payoutWallet, setPayoutWallet] = useState('')
+  const [cardHolder, setCardHolder] = useState('')
+  const [cardNumber, setCardNumber] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [bankName, setBankName] = useState('')
   const [payoutError, setPayoutError] = useState('')
   const [payoutLoading, setPayoutLoading] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
@@ -75,11 +79,23 @@ export default function DealsPage({ onLogout }: Props) {
     }
     setPayoutLoading(true)
     try {
-      await requestPayout(amount, payoutWallet.trim())
+      await requestPayout({
+        amount,
+        wallet_address: payoutWallet.trim(),
+        currency: 'USDT',
+        card_holder: cardHolder || undefined,
+        card_number: cardNumber || undefined,
+        phone_number: phoneNumber || undefined,
+        bank_name: bankName || undefined,
+      })
       setBalance(prev => parseFloat((prev - amount).toFixed(2)))
       setShowPayout(false)
       setPayoutAmount('')
       setPayoutWallet('')
+      setCardHolder('')
+      setCardNumber('')
+      setPhoneNumber('')
+      setBankName('')
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
       setPayoutError(msg || 'Payout failed')
@@ -239,6 +255,42 @@ export default function DealsPage({ onLogout }: Props) {
                   placeholder="0.00"
                   value={payoutAmount}
                   onChange={e => setPayoutAmount(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-gray-500 text-[11px] block mb-1">Card Holder</label>
+                <input
+                  className="w-full bg-[#141827] border border-[#1a1f30] rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-blue-500/50 transition"
+                  placeholder="John Doe"
+                  value={cardHolder}
+                  onChange={e => setCardHolder(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-gray-500 text-[11px] block mb-1">Card Number</label>
+                <input
+                  className="w-full bg-[#141827] border border-[#1a1f30] rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-blue-500/50 transition"
+                  placeholder="4111111111111111"
+                  value={cardNumber}
+                  onChange={e => setCardNumber(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-gray-500 text-[11px] block mb-1">Phone Number</label>
+                <input
+                  className="w-full bg-[#141827] border border-[#1a1f30] rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-blue-500/50 transition"
+                  placeholder="+380501234567"
+                  value={phoneNumber}
+                  onChange={e => setPhoneNumber(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-gray-500 text-[11px] block mb-1">Bank Name</label>
+                <input
+                  className="w-full bg-[#141827] border border-[#1a1f30] rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-blue-500/50 transition"
+                  placeholder="ПриватБанк"
+                  value={bankName}
+                  onChange={e => setBankName(e.target.value)}
                 />
               </div>
 
