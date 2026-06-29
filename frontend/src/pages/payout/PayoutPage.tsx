@@ -64,6 +64,15 @@ export default function PayoutPage() {
     }
   };
 
+  const handleStatusChange = async (payoutId: number, newStatus: string) => {
+    try {
+      const response = await client.patch(`/payout/${payoutId}/status?status=${newStatus}`);
+      setPayouts((prev) => prev.map((p) => p.id === payoutId ? { ...p, status: newStatus } : p));
+    } catch {
+      alert('Failed to update status');
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.breadcrumb}>Payouts</div>
@@ -136,9 +145,23 @@ export default function PayoutPage() {
                   <td className={styles.idCell}>#{p.id}</td>
 
                   <td>
-                    <span className={styles.statusBadge} style={{ backgroundColor: sc.bg, color: sc.color }}>
-                      {p.status}
-                    </span>
+                    <select
+                      value={p.status}
+                      onChange={(e) => handleStatusChange(p.id, e.target.value)}
+                      style={{
+                        backgroundColor: sc.bg,
+                        color: sc.color,
+                        border: 'none',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '11px',
+                      }}
+                    >
+                      <option value="pending">pending</option>
+                      <option value="completed">completed</option>
+                    </select>
                   </td>
 
                   <td className={styles.cell}>{p.currency}</td>
