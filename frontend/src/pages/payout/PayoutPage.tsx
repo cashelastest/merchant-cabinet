@@ -4,9 +4,14 @@ import client from '../../api/client';
 import CountdownTimer from '../../components/CountdownTimer/CountdownTimer';
 import styles from './PayoutPage.module.css';
 
+const PAYOUT_STATUSES = ['pending', 'processing', 'completed', 'failed', 'cancelled'];
+
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   pending:    { bg: '#2d2a1a', color: '#fbbf24' },
+  processing: { bg: '#1a3a4d', color: '#60a5fa' },
   completed: { bg: '#1a4d1a', color: '#4ade80' },
+  failed:    { bg: '#4d1a1a', color: '#ef4444' },
+  cancelled: { bg: '#3a2a1a', color: '#a0a0a0' },
 };
 
 interface Payout {
@@ -32,6 +37,8 @@ export default function PayoutPage() {
 
   useEffect(() => {
     fetchPayouts();
+    const interval = setInterval(fetchPayouts, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchPayouts = async () => {
@@ -140,7 +147,9 @@ export default function PayoutPage() {
                     )}
                   </td>
 
-                  <td className={styles.timerCell}>—</td>
+                  <td className={styles.timerCell}>
+                    <CountdownTimer receivedAt={p.created_at} isActive={p.status === 'pending'} />
+                  </td>
 
                   <td className={styles.idCell}>#{p.id}</td>
 
@@ -159,8 +168,11 @@ export default function PayoutPage() {
                         fontSize: '11px',
                       }}
                     >
-                      <option value="pending">pending</option>
-                      <option value="completed">completed</option>
+                      {PAYOUT_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
                     </select>
                   </td>
 
