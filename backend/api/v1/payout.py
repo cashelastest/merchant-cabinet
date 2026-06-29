@@ -156,6 +156,8 @@ async def payouts_ws(websocket: WebSocket, token: str = Query()):
     import logging
     logger = logging.getLogger(__name__)
 
+    await websocket.accept()
+
     try:
         user_id = _decode_token(token)
         session = SessionLocal()
@@ -167,7 +169,6 @@ async def payouts_ws(websocket: WebSocket, token: str = Query()):
         await websocket.close(code=1008, reason="Invalid token")
         return
 
-    await websocket.accept()
     logger.info(f"WebSocket /ws/payouts connected for user {user.id}")
 
     try:

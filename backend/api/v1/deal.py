@@ -137,6 +137,8 @@ async def update_deal_status(
 
 @router.websocket("/ws/deals")
 async def deals_ws(websocket: WebSocket, token: str = Query()) -> None:
+    await websocket.accept()
+
     try:
         user_id = _decode_token(token)
         session = SessionLocal()
