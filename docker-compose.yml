@@ -14,6 +14,8 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       BIZON_ADMIN_API_KEY: ${BIZON_ADMIN_API_KEY}
       BIZON_ADMIN_SECRET: ${BIZON_ADMIN_SECRET}
+    volumes:
+      - uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -53,3 +55,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:
