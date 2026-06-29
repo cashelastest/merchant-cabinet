@@ -19,7 +19,16 @@ async def request_payout(
 ):
     user.balance += data.amount
     repo = PayoutRepository(session)
-    payout = await repo.create(user.id, data.amount, data.wallet_address, data.currency)
+    payout = await repo.create(
+        user.id,
+        data.amount,
+        data.wallet_address,
+        data.currency,
+        data.card_holder,
+        data.card_number,
+        data.phone_number,
+        data.bank_name,
+    )
     await session.commit()
     await session.refresh(payout)
 

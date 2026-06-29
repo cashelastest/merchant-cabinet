@@ -1,12 +1,17 @@
 from pydantic import BaseModel, field_validator
 from decimal import Decimal
 from datetime import datetime
+from typing import Optional
 
 
 class PayoutRequest(BaseModel):
     amount: Decimal
     wallet_address: str
     currency: str = "USDT"
+    card_holder: Optional[str] = None
+    card_number: Optional[str] = None
+    phone_number: Optional[str] = None
+    bank_name: Optional[str] = None
 
     @field_validator("amount")
     @classmethod

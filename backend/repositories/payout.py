@@ -7,12 +7,26 @@ from .base import BaseRepository
 
 class PayoutRepository(BaseRepository[Payout]):
 
-    async def create(self, user_id: int, amount: Decimal, wallet_address: str, currency: str = "USDT") -> Payout:
+    async def create(
+        self,
+        user_id: int,
+        amount: Decimal,
+        wallet_address: str,
+        currency: str = "USDT",
+        card_holder: str = None,
+        card_number: str = None,
+        phone_number: str = None,
+        bank_name: str = None,
+    ) -> Payout:
         payout = Payout(
             user_id=user_id,
             amount=amount,
             wallet_address=wallet_address,
             currency=currency,
+            card_holder=card_holder,
+            card_number=card_number,
+            phone_number=phone_number,
+            bank_name=bank_name,
             status="pending",
             created_at=datetime.utcnow(),
         )

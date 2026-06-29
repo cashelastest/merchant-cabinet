@@ -15,5 +15,9 @@ class Payout(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(18, 2))
     wallet_address: Mapped[str]
     currency: Mapped[str] = mapped_column(server_default="USDT")
+    card_holder: Mapped[Optional[str]] = mapped_column(nullable=True)
+    card_number: Mapped[Optional[str]] = mapped_column(nullable=True)
+    phone_number: Mapped[Optional[str]] = mapped_column(nullable=True)
+    bank_name: Mapped[Optional[str]] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(server_default="pending")
     created_at: Mapped[datetime]
