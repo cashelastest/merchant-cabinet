@@ -6,6 +6,7 @@ from datetime import datetime
 class PayoutRequest(BaseModel):
     amount: Decimal
     wallet_address: str
+    currency: str = "USDT"
 
     @field_validator("amount")
     @classmethod

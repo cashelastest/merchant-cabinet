@@ -22,10 +22,10 @@ async def request_payout(
     if user.balance < data.amount:
         raise HTTPException(status_code=400, detail="Insufficient balance")
 
-    # Find payout route: USDT → USDT_wallet
-    route_id = await BizonService.find_payout_route()
+    route_id = await BizonService.find_payout_route(data.currency)
     if not route_id:
-        raise HTTPException(status_code=404, detail="No USDT → USDT_wallet payout route found")
+        wallet_type = "CASHUSD_wallet" if data.currency == "CASHUSD" else "USDT_wallet"
+        raise HTTPException(status_code=404, detail=f"No {data.currency} → {wallet_type} payout route found")
 
     # Create Bizon order
     try:

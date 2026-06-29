@@ -52,13 +52,14 @@ class BizonService:
             return data.get("routes", []) if data.get("success") else []
 
     @classmethod
-    async def find_payout_route(cls) -> str | None:
+    async def find_payout_route(cls, currency: str = "USDT") -> str | None:
         routes = await cls.get_routes()
+        wallet_type = "CASHUSD_wallet" if currency == "CASHUSD" else "USDT_wallet"
         for route in routes:
             if (
                 not route.get("isShowWeb")
-                and route.get("from", {}).get("xml") == "USDT"
-                and route.get("to", {}).get("xml") == "USDT_wallet"
+                and route.get("from", {}).get("xml") == currency
+                and route.get("to", {}).get("xml") == wallet_type
             ):
                 return route.get("routeId")
         return None
