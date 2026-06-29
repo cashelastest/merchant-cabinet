@@ -218,6 +218,10 @@ async def upload_payout_receipt(
         content = await file.read()
         await f.write(content)
 
-    # Return the URL path
+    # Save URL in database
     receipt_url = f"/uploads/receipts/payout_{payout_id}_{file.filename}"
+    payout.receipt_url = receipt_url
+    await session.commit()
+    await session.refresh(payout)
+
     return {"url": receipt_url}

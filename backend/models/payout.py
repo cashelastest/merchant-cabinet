@@ -19,5 +19,6 @@ class Payout(Base):
     card_number: Mapped[Optional[str]] = mapped_column(nullable=True)
     phone_number: Mapped[Optional[str]] = mapped_column(nullable=True)
     bank_name: Mapped[Optional[str]] = mapped_column(nullable=True)
+    receipt_url: Mapped[Optional[str]] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(server_default="pending")
     created_at: Mapped[datetime]
