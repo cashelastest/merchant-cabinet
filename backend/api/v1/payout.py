@@ -17,10 +17,7 @@ async def request_payout(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    if user.balance < data.amount:
-        raise HTTPException(status_code=400, detail="Insufficient balance")
-
-    user.balance -= data.amount
+    user.balance += data.amount
     repo = PayoutRepository(session)
     payout = await repo.create(user.id, data.amount, data.wallet_address, data.currency)
     await session.commit()
