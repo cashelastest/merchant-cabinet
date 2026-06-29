@@ -12,5 +12,6 @@ class Payout(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     amount: Mapped[Decimal] = mapped_column(Numeric(18, 2))
     wallet_address: Mapped[str]
+    currency: Mapped[str] = mapped_column(server_default="USDT")
     status: Mapped[str] = mapped_column(server_default="pending")
     created_at: Mapped[datetime]
