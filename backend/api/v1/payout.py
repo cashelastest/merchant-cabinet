@@ -177,6 +177,7 @@ async def payouts_ws(websocket: WebSocket):
         await websocket.close(code=1008, reason="Invalid token")
         return
 
+    await websocket.accept()
     await payout_manager.connect(websocket, user_id)
     try:
         while True:
