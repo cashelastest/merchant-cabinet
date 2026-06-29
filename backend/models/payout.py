@@ -3,6 +3,7 @@ from sqlalchemy import ForeignKey, Numeric
 from sqlalchemy.orm import Mapped, mapped_column
 from decimal import Decimal
 from datetime import datetime
+from typing import Optional
 
 
 class Payout(Base):
@@ -10,6 +11,7 @@ class Payout(Base):
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    deal_id: Mapped[Optional[int]] = mapped_column(ForeignKey("deal.id"), nullable=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(18, 2))
     wallet_address: Mapped[str]
     currency: Mapped[str] = mapped_column(server_default="USDT")

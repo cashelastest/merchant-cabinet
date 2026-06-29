@@ -63,6 +63,28 @@
   border-right: none;
 }
 
+.rowActive {
+  background-color: #0f1520;
+  transition: background-color 0.1s ease;
+}
+
+.rowActive:hover {
+  background-color: #131c28;
+}
+
+.rowInactive {
+  background-color: #0f0f0f;
+  transition: background-color 0.1s ease;
+}
+
+.rowInactive:hover {
+  background-color: #141414;
+}
+
+.timerCell {
+  padding: 6px 14px;
+}
+
 .statusBadge {
   display: inline-block;
   padding: 4px 10px;
@@ -83,6 +105,12 @@
   font-size: 12px;
   white-space: nowrap;
   font-family: 'Courier New', monospace;
+}
+
+.amountCell {
+  color: #e0e0e0;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .emptyState {
