@@ -6,7 +6,7 @@ import json
 import aiofiles
 from pathlib import Path
 
-from core.dependencies import get_current_user, get_session
+from core.dependencies import get_current_user, get_session, get_current_user_ws
 from models import User
 from repositories.payout import PayoutRepository
 from schemas import PayoutRequest, PayoutResponse
@@ -151,56 +151,25 @@ async def update_payout_status(
 
 
 @router.websocket("/ws/payouts")
-async def payouts_ws(websocket: WebSocket):
-    from repositories.user import UserRepository
-    import jwt
-    from core.config import SECRET_KEY
-    from core.dependencies import SessionLocal
+async def payouts_ws(
+    websocket: WebSocket,
+    user: User = Depends(get_current_user_ws),
+):
     import logging
-
     logger = logging.getLogger(__name__)
-    logger.info("WebSocket /ws/payouts connection attempt")
+    logger.info(f"WebSocket /ws/payouts connection attempt for user {user.id}")
 
-    try:
-        await websocket.accept()
-        logger.info("WebSocket accepted")
-    except Exception as e:
-        logger.error(f"Failed to accept WebSocket: {e}")
-        return
+    await websocket.accept()
+    logger.info("WebSocket accepted")
 
-    # Extract token from query parameters
-    token = websocket.query_params.get("token")
-    logger.info(f"Token: {token[:20] if token else 'None'}...")
-
-    if not token:
-        logger.warning("No token provided")
-        await websocket.close(code=1008, reason="No token provided")
-        return
-
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        user_id = int(payload["sub"])
-        logger.info(f"Token decoded, user_id: {user_id}")
-
-        async with SessionLocal() as session:
-            user = await UserRepository(session).get_with_currencies(user_id)
-            if not user:
-                logger.warning(f"User not found: {user_id}")
-                await websocket.close(code=1008, reason="User not found")
-                return
-    except Exception as e:
-        logger.error(f"Error in token validation: {e}")
-        await websocket.close(code=1008, reason="Invalid token")
-        return
-
-    logger.info(f"Connected: user_id={user_id}")
-    await payout_manager.connect(websocket, user_id)
+    logger.info(f"Connected: user_id={user.id}")
+    await payout_manager.connect(websocket, user.id)
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        logger.info(f"Disconnected: user_id={user_id}")
-        payout_manager.disconnect(websocket, user_id)
+        logger.info(f"Disconnected: user_id={user.id}")
+        payout_manager.disconnect(websocket, user.id)
 
 
 @router.post("/{payout_id}/receipt/")
