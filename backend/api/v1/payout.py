@@ -1,8 +1,10 @@
 """Payout router."""
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 import json
+import aiofiles
+from pathlib import Path
 
 from core.dependencies import get_current_user, get_session, get_current_user_ws
 from models import User
@@ -151,11 +153,67 @@ async def update_payout_status(
 @router.websocket("/ws/payouts")
 async def payouts_ws(
     websocket: WebSocket,
-    user: User = Depends(get_current_user_ws),
+    token: str = None,
+    session: AsyncSession = Depends(get_session),
 ):
+    from repositories.user import UserRepository
+    import jwt
+    from core.config import SECRET_KEY
+
+    # Manual token validation for WebSocket
+    if not token:
+        await websocket.close(code=1008, reason="No token provided")
+        return
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id = int(payload["sub"])
+        user = await UserRepository(session).get_with_currencies(user_id)
+        if not user:
+            await websocket.close(code=1008, reason="User not found")
+            return
+    except Exception:
+        await websocket.close(code=1008, reason="Invalid token")
+        return
+
     await payout_manager.connect(websocket, user.id)
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
         payout_manager.disconnect(websocket, user.id)
+
+
+@router.post("/{payout_id}/receipt/")
+async def upload_payout_receipt(
+    payout_id: int,
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    from models import Payout
+    from sqlalchemy import select
+
+    # Verify payout belongs to user
+    stmt = select(Payout).where(
+        (Payout.id == payout_id) & (Payout.user_id == user.id)
+    )
+    result = await session.execute(stmt)
+    payout = result.scalar_one_or_none()
+
+    if not payout:
+        raise HTTPException(status_code=404, detail="Payout not found")
+
+    # Create uploads directory if it doesn't exist
+    upload_dir = Path("/app/uploads/receipts")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save file
+    file_path = upload_dir / f"payout_{payout_id}_{file.filename}"
+    async with aiofiles.open(file_path, "wb") as f:
+        content = await file.read()
+        await f.write(content)
+
+    # Return the URL path
+    receipt_url = f"/uploads/receipts/payout_{payout_id}_{file.filename}"
+    return {"url": receipt_url}
