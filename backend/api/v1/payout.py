@@ -156,34 +156,50 @@ async def payouts_ws(websocket: WebSocket):
     import jwt
     from core.config import SECRET_KEY
     from core.dependencies import SessionLocal
+    import logging
 
-    await websocket.accept()
+    logger = logging.getLogger(__name__)
+    logger.info("WebSocket /ws/payouts connection attempt")
+
+    try:
+        await websocket.accept()
+        logger.info("WebSocket accepted")
+    except Exception as e:
+        logger.error(f"Failed to accept WebSocket: {e}")
+        return
 
     # Extract token from query parameters
     token = websocket.query_params.get("token")
+    logger.info(f"Token: {token[:20] if token else 'None'}...")
 
     if not token:
+        logger.warning("No token provided")
         await websocket.close(code=1008, reason="No token provided")
         return
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id = int(payload["sub"])
+        logger.info(f"Token decoded, user_id: {user_id}")
 
         async with SessionLocal() as session:
             user = await UserRepository(session).get_with_currencies(user_id)
             if not user:
+                logger.warning(f"User not found: {user_id}")
                 await websocket.close(code=1008, reason="User not found")
                 return
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error in token validation: {e}")
         await websocket.close(code=1008, reason="Invalid token")
         return
 
+    logger.info(f"Connected: user_id={user_id}")
     await payout_manager.connect(websocket, user_id)
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
+        logger.info(f"Disconnected: user_id={user_id}")
         payout_manager.disconnect(websocket, user_id)
 
 
