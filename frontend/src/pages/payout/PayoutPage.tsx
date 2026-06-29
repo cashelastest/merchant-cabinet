@@ -14,8 +14,13 @@ interface Payout {
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   pending:    { bg: '#2d2a1a', color: '#fbbf24' },
-  completed: { bg: '#1a4d1a', color: '#4ade80' },
+  completed:  { bg: '#1a4d1a', color: '#4ade80' },
 };
+
+function getValue(obj: Record<string, unknown>, key: string): string {
+  const v = obj[key];
+  return v !== undefined && v !== null ? String(v) : '—';
+}
 
 export default function PayoutPage() {
   const { t } = useTranslation();
@@ -36,8 +41,6 @@ export default function PayoutPage() {
       setLoading(false);
     }
   };
-
-  const fmt = (iso: string) => new Date(iso + (iso.endsWith('Z') ? '' : 'Z')).toLocaleString('ru-RU');
 
   return (
     <div className={styles.page}>
@@ -69,7 +72,7 @@ export default function PayoutPage() {
             {!loading && payouts.map((p) => {
               const sc = STATUS_COLORS[p.status] || { bg: '#1a3a4d', color: '#60a5fa' };
               return (
-                <tr key={p.id}>
+                <tr key={p.id} className={styles.rowInactive}>
                   <td className={styles.idCell}>#{p.id}</td>
                   <td className={styles.cell}>{p.amount.toLocaleString()}</td>
                   <td className={styles.cell}>{p.currency}</td>
@@ -79,7 +82,9 @@ export default function PayoutPage() {
                       {p.status}
                     </span>
                   </td>
-                  <td className={styles.cell}>{fmt(p.created_at)}</td>
+                  <td className={styles.cell}>
+                    {new Date(p.created_at + (p.created_at.endsWith('Z') ? '' : 'Z')).toLocaleString('ru-RU')}
+                  </td>
                 </tr>
               );
             })}
