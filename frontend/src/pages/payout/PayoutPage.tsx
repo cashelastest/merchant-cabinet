@@ -56,13 +56,14 @@ export default function PayoutPage() {
       setPayouts((prev) => {
         const existingIds = new Set(prev.map((p) => p.id));
         const newPayouts = data.filter((p) => !existingIds.has(p.id));
+        console.log('[POLL]', { prevCount: prev.length, allCount: data.length, newCount: newPayouts.length, newIds: newPayouts.map(p => p.id) });
         if (newPayouts.length > 0) {
-          return [...prev, ...newPayouts];
+          return [...newPayouts, ...prev];
         }
         return prev;
       });
-    } catch {
-      // Silently fail on poll errors
+    } catch (e) {
+      console.error('[POLL ERROR]', e);
     }
   };
 
