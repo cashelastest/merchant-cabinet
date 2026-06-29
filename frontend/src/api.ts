@@ -68,5 +68,5 @@ export function createWs(): WebSocket {
 
 export function createPayoutWs(): WebSocket {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-  return new WebSocket(`${proto}://${location.host}/api/v1/payout/ws/payouts?token=${getToken()}`)
+  return new WebSocket(`${proto}://${location.host}/api/v1/ws/payouts?token=${getToken()}`)
 }
