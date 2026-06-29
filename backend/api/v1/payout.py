@@ -157,6 +157,8 @@ async def payouts_ws(websocket: WebSocket):
     from core.config import SECRET_KEY
     from core.dependencies import SessionLocal
 
+    await websocket.accept()
+
     # Extract token from query parameters
     token = websocket.query_params.get("token")
 
@@ -177,7 +179,6 @@ async def payouts_ws(websocket: WebSocket):
         await websocket.close(code=1008, reason="Invalid token")
         return
 
-    await websocket.accept()
     await payout_manager.connect(websocket, user_id)
     try:
         while True:
