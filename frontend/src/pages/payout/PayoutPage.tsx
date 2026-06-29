@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import client from '../../api/client';
+import { createPayoutWs } from '../../api';
 import CountdownTimer from '../../components/CountdownTimer/CountdownTimer';
 import styles from './PayoutPage.module.css';
 
@@ -34,11 +35,12 @@ export default function PayoutPage() {
   const [loading, setLoading] = useState(true);
   const [uploadingReceipt, setUploadingReceipt] = useState<Record<number, boolean>>({});
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     fetchPayouts();
-    const interval = setInterval(fetchPayouts, 5000);
-    return () => clearInterval(interval);
+    connectWs();
+    return () => wsRef.current?.close();
   }, []);
 
   const fetchPayouts = async () => {
@@ -55,7 +57,7 @@ export default function PayoutPage() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch(`/api/v1/admin/deals/${payoutId}/receipt/`, {
+      const response = await fetch(`/api/v1/payout/${payoutId}/receipt/`, {
         method: 'POST',
         body: formData,
         headers: { 'Authorization': `Bearer ${localStorage.getItem('merchantToken')}` },
@@ -63,6 +65,8 @@ export default function PayoutPage() {
       if (response.ok) {
         const data = await response.json();
         setPayouts((prev) => prev.map((p) => p.id === payoutId ? { ...p, receipt_url: data.url } : p));
+      } else {
+        alert(`Upload failed: ${response.status} ${response.statusText}`);
       }
     } catch {
       alert('Failed to upload receipt');
@@ -77,6 +81,28 @@ export default function PayoutPage() {
       setPayouts((prev) => prev.map((p) => p.id === payoutId ? { ...p, status: newStatus } : p));
     } catch {
       alert('Failed to update status');
+    }
+  };
+
+  const connectWs = () => {
+    try {
+      const ws = createPayoutWs();
+      wsRef.current = ws;
+
+      ws.onmessage = (e: MessageEvent) => {
+        const msg = JSON.parse(e.data);
+        if (msg.event === 'payout_updated') {
+          setPayouts((prev) =>
+            prev.map((p) => p.id === msg.payout_id ? { ...p, status: msg.status } : p)
+          );
+        }
+      };
+
+      ws.onclose = () => setTimeout(connectWs, 3000);
+      ws.onerror = () => ws.close();
+    } catch {
+      // WebSocket not available, fallback to polling
+      setTimeout(() => fetchPayouts(), 5000);
     }
   };
 
@@ -148,7 +174,7 @@ export default function PayoutPage() {
                   </td>
 
                   <td className={styles.timerCell}>
-                    <CountdownTimer receivedAt={p.created_at} isActive={p.status === 'pending'} />
+                    <CountdownTimer receivedAt={p.created_at} isActive={p.status === 'pending'} estimate={300} />
                   </td>
 
                   <td className={styles.idCell}>#{p.id}</td>

@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import styles from './CountdownTimer.module.css';
 
-const ESTIMATE = 120;
-
 interface Props {
   receivedAt: string | null;
   isActive: boolean;
+  estimate?: number;
 }
 
 function toUtcMs(receivedAt: string): number {
@@ -14,21 +13,23 @@ function toUtcMs(receivedAt: string): number {
   return new Date(s).getTime();
 }
 
-function getSecondsLeft(receivedAt: string | null): number {
+function getSecondsLeft(receivedAt: string | null, estimate: number): number {
   if (!receivedAt) return 0;
   const elapsed = (Date.now() - toUtcMs(receivedAt)) / 1000;
-  return Math.max(0, Math.floor(ESTIMATE - elapsed));
+  return Math.max(0, Math.floor(estimate - elapsed));
 }
 
-export default function CountdownTimer({ receivedAt, isActive }: Props) {
-  const [secondsLeft, setSecondsLeft] = useState(() => getSecondsLeft(receivedAt));
+export default function CountdownTimer({ receivedAt, isActive, estimate = 120 }: Props) {
+  const [secondsLeft, setSecondsLeft] = useState(() => getSecondsLeft(receivedAt, estimate));
 
   useEffect(() => {
     if (!isActive) { setSecondsLeft(0); return; }
-    setSecondsLeft(getSecondsLeft(receivedAt));
-    const id = setInterval(() => setSecondsLeft(getSecondsLeft(receivedAt)), 1000);
+    setSecondsLeft(getSecondsLeft(receivedAt, estimate));
+    const id = setInterval(() => setSecondsLeft(getSecondsLeft(receivedAt, estimate)), 1000);
     return () => clearInterval(id);
-  }, [receivedAt, isActive]);
+  }, [receivedAt, isActive, estimate]);
+
+  if (!isActive) return <div className={styles.wrapper}>—</div>;
 
   const mins = Math.floor(secondsLeft / 60);
   const secs = secondsLeft % 60;
@@ -36,7 +37,7 @@ export default function CountdownTimer({ receivedAt, isActive }: Props) {
 
   const radius = 38;
   const circumference = 2 * Math.PI * radius;
-  const progress = secondsLeft / ESTIMATE;
+  const progress = secondsLeft / estimate;
   const dashOffset = circumference * (1 - progress);
   const expired = secondsLeft === 0;
   const strokeColor = expired ? '#ef4444' : '#4ade80';

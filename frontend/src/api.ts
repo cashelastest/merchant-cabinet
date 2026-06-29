@@ -65,3 +65,8 @@ export function createWs(): WebSocket {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws'
   return new WebSocket(`${proto}://${location.host}/api/v1/ws/deals?token=${getToken()}`)
 }
+
+export function createPayoutWs(): WebSocket {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+  return new WebSocket(`${proto}://${location.host}/api/v1/ws/payouts?token=${getToken()}`)
+}

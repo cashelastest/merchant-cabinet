@@ -1,14 +1,42 @@
 """Payout router."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
+import json
 
-from core.dependencies import get_current_user, get_session
+from core.dependencies import get_current_user, get_session, get_current_user_ws
 from models import User
 from repositories.payout import PayoutRepository
 from schemas import PayoutRequest, PayoutResponse
 
 router = APIRouter(prefix="/payout")
+
+# Simple payout WebSocket manager for broadcasting updates to connected users
+class PayoutConnectionManager:
+    def __init__(self):
+        self._connections: dict[int, list[WebSocket]] = {}  # user_id -> [websockets]
+
+    async def connect(self, websocket: WebSocket, user_id: int):
+        await websocket.accept()
+        if user_id not in self._connections:
+            self._connections[user_id] = []
+        self._connections[user_id].append(websocket)
+
+    def disconnect(self, websocket: WebSocket, user_id: int):
+        if user_id in self._connections:
+            self._connections[user_id].remove(websocket)
+            if not self._connections[user_id]:
+                del self._connections[user_id]
+
+    async def broadcast_to_user(self, user_id: int, message: str):
+        if user_id in self._connections:
+            for ws in list(self._connections[user_id]):
+                try:
+                    await ws.send_text(message)
+                except Exception:
+                    self._connections[user_id].remove(ws)
+
+payout_manager = PayoutConnectionManager()
 
 
 @router.post("/", response_model=PayoutResponse)
@@ -95,6 +123,16 @@ async def update_payout_status(
     await session.commit()
     await session.refresh(payout)
 
+    # Broadcast status update to WebSocket clients
+    await payout_manager.broadcast_to_user(
+        user.id,
+        json.dumps({
+            "event": "payout_updated",
+            "payout_id": payout.id,
+            "status": payout.status,
+        })
+    )
+
     return PayoutResponse(
         id=payout.id,
         amount=float(payout.amount),
@@ -108,3 +146,16 @@ async def update_payout_status(
         created_at=payout.created_at,
         redirect_url="",
     )
+
+
+@router.websocket("/ws/payouts")
+async def payouts_ws(
+    websocket: WebSocket,
+    user: User = Depends(get_current_user_ws),
+):
+    await payout_manager.connect(websocket, user.id)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        payout_manager.disconnect(websocket, user.id)
