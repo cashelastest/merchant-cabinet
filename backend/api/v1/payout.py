@@ -12,7 +12,7 @@ from repositories.payout import PayoutRepository
 from repositories.user import UserRepository
 from schemas import PayoutRequest, PayoutResponse
 
-router = APIRouter(prefix="/payout")
+router = APIRouter()
 
 # Simple payout WebSocket manager for broadcasting updates to connected users
 class PayoutConnectionManager:
@@ -42,7 +42,7 @@ class PayoutConnectionManager:
 payout_manager = PayoutConnectionManager()
 
 
-@router.post("/", response_model=PayoutResponse)
+@router.post("/payout/", response_model=PayoutResponse)
 async def request_payout(
     data: PayoutRequest,
     user: User = Depends(get_current_user),
@@ -78,7 +78,7 @@ async def request_payout(
     )
 
 
-@router.get("/", response_model=list[PayoutResponse])
+@router.get("/payout/", response_model=list[PayoutResponse])
 async def list_payouts(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -103,7 +103,7 @@ async def list_payouts(
     ]
 
 
-@router.patch("/{payout_id}/status")
+@router.patch("/payout/{payout_id}/status")
 async def update_payout_status(
     payout_id: int,
     status: str,
@@ -151,7 +151,7 @@ async def update_payout_status(
     )
 
 
-@router.websocket("/ws/payouts")
+@router.websocket("/payout/ws/payouts")
 async def payouts_ws(websocket: WebSocket, token: str = Query()):
     import logging
     logger = logging.getLogger(__name__)
@@ -188,7 +188,7 @@ async def payouts_ws(websocket: WebSocket, token: str = Query()):
         pass
 
 
-@router.post("/{payout_id}/receipt/")
+@router.post("/payout/{payout_id}/receipt/")
 async def upload_payout_receipt(
     payout_id: int,
     file: UploadFile = File(...),
