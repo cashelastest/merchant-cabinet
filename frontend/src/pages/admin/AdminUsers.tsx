@@ -33,8 +33,6 @@ export default function AdminUsers() {
 
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [newApiKey, setNewApiKey] = useState('');
-  const [newSecret, setNewSecret] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState(false);
@@ -81,11 +79,11 @@ export default function AdminUsers() {
       await adminClient.post('/admin/users', {
         username: newUsername,
         password: newPassword,
-        api_key: newApiKey,
-        secret: newSecret,
+        api_key: '',
+        secret: '',
       });
       setCreateSuccess(true);
-      setNewUsername(''); setNewPassword(''); setNewApiKey(''); setNewSecret('');
+      setNewUsername(''); setNewPassword('');
       setTimeout(() => setCreateSuccess(false), 3000);
       await fetchUsers();
     } catch (e: unknown) {
@@ -163,14 +161,12 @@ export default function AdminUsers() {
       {error && <div className={styles.error}>{error}</div>}
 
       <form className={styles.createForm} onSubmit={handleCreate}>
-        <h2 className={styles.sectionTitle}>{t('admin.users.create_user')}</h2>
+        <h2 className={styles.sectionTitle}>Создать пользователя</h2>
         <div className={styles.createFields}>
-          <input className={styles.currencyInput} placeholder={t('admin.users.username')} value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
-          <input className={styles.currencyInput} placeholder={t('admin.users.password')} type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-          <input className={styles.currencyInput} placeholder={t('admin.users.api_key')} value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} required />
-          <input className={styles.currencyInput} placeholder={t('admin.users.secret')} value={newSecret} onChange={(e) => setNewSecret(e.target.value)} required />
+          <input className={styles.currencyInput} placeholder="Имя пользователя" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
+          <input className={styles.currencyInput} placeholder="Пароль" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
           <button className={createSuccess ? styles.savedBtn : styles.saveBtn} type="submit" disabled={creating}>
-            {creating ? 'Creating…' : createSuccess ? 'Created ✓' : t('common.save')}
+            {creating ? 'Создание…' : createSuccess ? 'Создано ✓' : 'Создать'}
           </button>
         </div>
         {createError && <div className={styles.error}>{createError}</div>}

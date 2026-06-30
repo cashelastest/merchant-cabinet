@@ -13,7 +13,7 @@ import uuid
 from core.dependencies import get_user_service, require_admin, get_session
 from services.user import UserService
 from schemas import CreateUserRequest
-from models import User, Deal, ApiKeyLog
+from models import User, Deal, ApiKeyLog, Payout
 
 
 class CurrenciesUpdate(BaseModel):
@@ -308,3 +308,90 @@ async def get_receipt(
         raise HTTPException(status_code=404, detail="Receipt not found")
 
     return {"url": deal.receipt_url}
+
+
+@router.get("/payouts")
+async def list_payouts_admin(
+    _: User = Depends(require_admin),
+    today: bool = Query(False),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    session: AsyncSession = Depends(get_session),
+):
+    query = select(Payout).order_by(Payout.created_at.desc())
+
+    if today:
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        query = query.where(Payout.created_at >= today_start)
+    else:
+        if date_from:
+            start_date = datetime.fromisoformat(date_from)
+            query = query.where(Payout.created_at >= start_date)
+        if date_to:
+            end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
+            query = query.where(Payout.created_at < end_date)
+
+    if status:
+        query = query.where(Payout.status == status)
+
+    result = await session.execute(query)
+    payouts = result.scalars().all()
+
+    from repositories.user import UserRepository
+    user_repo = UserRepository(session)
+
+    response = []
+    for payout in payouts:
+        payout_dict = {
+            "id": payout.id,
+            "user_id": payout.user_id,
+            "amount": float(payout.amount),
+            "wallet_address": payout.wallet_address,
+            "currency": payout.currency,
+            "card_holder": payout.card_holder,
+            "card_number": payout.card_number,
+            "phone_number": payout.phone_number,
+            "bank_name": payout.bank_name,
+            "receipt_url": payout.receipt_url,
+            "status": payout.status,
+            "created_at": payout.created_at.isoformat() if payout.created_at else None,
+            "user_username": None,
+        }
+        if payout.user_id:
+            user = await user_repo.get_by_id(payout.user_id)
+            if user:
+                payout_dict["user_username"] = user.username
+        response.append(payout_dict)
+
+    return response
+
+
+@router.post("/payouts/{payout_id}/receipt")
+async def upload_payout_receipt_admin(
+    payout_id: int,
+    file: UploadFile = File(...),
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    payout = await session.get(Payout, payout_id)
+    if not payout:
+        raise HTTPException(status_code=404, detail="Payout not found")
+
+    from pathlib import Path
+    upload_dir = Path("/app/uploads/receipts")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"payout_{payout_id}_{file.filename}"
+    filepath = upload_dir / filename
+
+    contents = await file.read()
+    import aiofiles
+    async with aiofiles.open(filepath, "wb") as f:
+        await f.write(contents)
+
+    url = f"/uploads/receipts/{filename}"
+    payout.receipt_url = url
+    await session.commit()
+
+    return {"url": url}
