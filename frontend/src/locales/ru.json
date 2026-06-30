@@ -143,6 +143,35 @@
         "total_amount": "Итого"
       }
     },
+    "payouts": {
+      "breadcrumb": "Админ / Выплаты",
+      "title": "История выплат",
+      "filters": {
+        "today_only": "Только сегодня",
+        "date_from": "От",
+        "date_to": "До",
+        "status": "Статус",
+        "all_statuses": "Все"
+      },
+      "table": {
+        "id": "ID",
+        "user": "Пользователь",
+        "amount": "Сумма",
+        "currency": "Валюта",
+        "wallet": "Адрес кошелька",
+        "status": "Статус",
+        "created_at": "Создана",
+        "receipt": "Чек",
+        "total_payouts": "Всего выплат",
+        "total_amount": "Сумма"
+      },
+      "buttons": {
+        "upload": "Загрузить",
+        "uploading": "Загрузка...",
+        "view": "Просмотр",
+        "apply": "Применить"
+      }
+    },
     "logs": {
       "breadcrumb": "Админ / Логи API",
       "title": "Логи использования API ключей",

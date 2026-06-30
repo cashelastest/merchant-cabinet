@@ -143,6 +143,31 @@
         "total_amount": "Total Amount"
       }
     },
+    "payouts": {
+      "title": "Payouts",
+      "filters": {
+        "today_only": "Today Only",
+        "all_statuses": "All"
+      },
+      "table": {
+        "id": "ID",
+        "user": "User",
+        "amount": "Amount",
+        "currency": "Currency",
+        "wallet": "Wallet Address",
+        "status": "Status",
+        "created_at": "Created",
+        "receipt": "Receipt",
+        "total_payouts": "Total Payouts",
+        "total_amount": "Total Amount"
+      },
+      "buttons": {
+        "upload": "Upload",
+        "uploading": "Uploading...",
+        "view": "View",
+        "apply": "Apply"
+      }
+    },
     "logs": {
       "breadcrumb": "Admin / API Logs",
       "title": "API Key Usage Logs",

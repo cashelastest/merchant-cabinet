@@ -143,6 +143,31 @@
         "total_amount": "Разом"
       }
     },
+    "payouts": {
+      "title": "Виплати",
+      "filters": {
+        "today_only": "Тільки сьогодні",
+        "all_statuses": "Всі"
+      },
+      "table": {
+        "id": "ID",
+        "user": "Користувач",
+        "amount": "Сума",
+        "currency": "Валюта",
+        "wallet": "Адреса гаманця",
+        "status": "Статус",
+        "created_at": "Створена",
+        "receipt": "Чек",
+        "total_payouts": "Всього виплат",
+        "total_amount": "Разом"
+      },
+      "buttons": {
+        "upload": "Завантажити",
+        "uploading": "Завантаження...",
+        "view": "Переглянути",
+        "apply": "Застосувати"
+      }
+    },
     "logs": {
       "breadcrumb": "Адмін / Логи API",
       "title": "Логи використання API ключів",

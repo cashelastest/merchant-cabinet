@@ -359,7 +359,7 @@ async def list_payouts_admin(
             "user_username": None,
         }
         if payout.user_id:
-            user = await user_repo.get_by_id(payout.user_id)
+            user = await user_repo.get_with_currencies(payout.user_id)
             if user:
                 payout_dict["user_username"] = user.username
         response.append(payout_dict)

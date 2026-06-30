@@ -112,14 +112,11 @@ export default function AdminPayouts() {
   return (
     <div className={styles.page}>
       <div className={styles.topbar}>
-        <h1 className={styles.pageTitle}>Выплаты</h1>
+        <h1 className={styles.pageTitle}>{t('admin.payouts.title')}</h1>
         <div className={styles.topbarActions}>
           <LanguageSwitcher />
           <button className={styles.navBtn} onClick={() => navigate('/admin/users')}>
             {t('nav.admin_users')}
-          </button>
-          <button className={styles.navBtn} onClick={() => navigate('/admin/logs')}>
-            {t('nav.admin_logs')}
           </button>
           <button className={styles.logoutBtn} onClick={logout}>{t('nav.logout')}</button>
         </div>
@@ -133,7 +130,7 @@ export default function AdminPayouts() {
             checked={todayOnly}
             onChange={(e) => setTodayOnly(e.target.checked)}
           />
-          Today
+          {t('admin.payouts.filters.today_only')}
         </label>
 
         <input
@@ -157,44 +154,44 @@ export default function AdminPayouts() {
           value={status}
           onChange={(e) => setStatus(e.target.value)}
         >
-          <option value="">Все</option>
-          <option value="pending">В ожидании</option>
-          <option value="processing">В процессе</option>
-          <option value="completed">Завершена</option>
-          <option value="failed">Ошибка</option>
-          <option value="cancelled">Отменена</option>
+          <option value="">{t('admin.payouts.filters.all_statuses')}</option>
+          <option value="pending">pending</option>
+          <option value="processing">processing</option>
+          <option value="completed">completed</option>
+          <option value="failed">failed</option>
+          <option value="cancelled">cancelled</option>
         </select>
 
         <button type="submit" className={styles.saveBtn}>
-          Apply
+          {t('admin.payouts.buttons.apply')}
         </button>
       </form>
 
       {/* Summary */}
       <div className={styles.summary}>
-        <span>Всего выплат: <strong>{payouts.length}</strong></span>
-        <span>Сумма: <strong>{totalAmount.toLocaleString()}</strong></span>
+        <span>{t('admin.payouts.table.total_payouts')}: <strong>{payouts.length}</strong></span>
+        <span>{t('admin.payouts.table.total_amount')}: <strong>{totalAmount.toLocaleString()}</strong></span>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
 
       {loading ? (
-        <div className={styles.empty}>Загрузка…</div>
+        <div className={styles.empty}>{t('common.loading')}</div>
       ) : payouts.length === 0 ? (
-        <div className={styles.empty}>Выплат не найдено</div>
+        <div className={styles.empty}>{t('common.no_data')}</div>
       ) : (
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Пользователь</th>
-                <th>Сумма</th>
-                <th>Валюта</th>
-                <th>Адрес кошелька</th>
-                <th>Статус</th>
-                <th>Дата создания</th>
-                <th>Чек</th>
+                <th>{t('admin.payouts.table.id')}</th>
+                <th>{t('admin.payouts.table.user')}</th>
+                <th>{t('admin.payouts.table.amount')}</th>
+                <th>{t('admin.payouts.table.currency')}</th>
+                <th>{t('admin.payouts.table.wallet')}</th>
+                <th>{t('admin.payouts.table.status')}</th>
+                <th>{t('admin.payouts.table.created_at')}</th>
+                <th>{t('admin.payouts.table.receipt')}</th>
               </tr>
             </thead>
             <tbody>
@@ -225,7 +222,7 @@ export default function AdminPayouts() {
                       borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
                       border: 'none', display: 'block',
                     }}>
-                      {uploadingReceipt[p.id] ? 'Загрузка...' : 'Загрузить'}
+                      {uploadingReceipt[p.id] ? t('admin.payouts.buttons.uploading') : t('admin.payouts.buttons.upload')}
                       <input
                         type="file"
                         onChange={(e) => {
@@ -245,7 +242,7 @@ export default function AdminPayouts() {
                           border: 'none',
                         }}
                       >
-                        Просмотр
+                        {t('admin.payouts.buttons.view')}
                       </button>
                     )}
                   </td>
@@ -266,7 +263,7 @@ export default function AdminPayouts() {
             maxWidth: '500px', width: '90%', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
           }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '15px' }}>
-              Детали пользователя
+              {t('user_details.title')}
             </div>
             <div style={{ marginBottom: '10px' }}>
               <strong>{t('user_details.username')}:</strong> {selectedUser.username}
@@ -300,7 +297,7 @@ export default function AdminPayouts() {
             maxWidth: '600px', width: '90%', maxHeight: '80vh', overflow: 'auto',
           }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <h3 style={{ margin: 0, color: '#fff' }}>Чек</h3>
+              <h3 style={{ margin: 0, color: '#fff' }}>{t('admin.payouts.table.receipt')}</h3>
               <button onClick={() => setViewingReceipt(null)} style={{
                 backgroundColor: '#2a2a2a', color: '#fff', border: 'none', padding: '8px 12px',
                 borderRadius: '4px', cursor: 'pointer',

@@ -145,14 +145,11 @@ export default function AdminUsers() {
   return (
     <div className={styles.page}>
       <div className={styles.topbar}>
-        <h1 className={styles.pageTitle}>{t('admin.users.breadcrumb')}</h1>
+        <h1 className={styles.pageTitle}>{t('admin.users.title')}</h1>
         <div className={styles.topbarActions}>
           <LanguageSwitcher />
           <button className={styles.navBtn} onClick={() => navigate('/admin/deals')}>
-            {t('nav.admin_users')}
-          </button>
-          <button className={styles.navBtn} onClick={() => navigate('/admin/logs')}>
-            {t('nav.admin_logs')}
+            {t('admin.payouts.title')}
           </button>
           <button className={styles.logoutBtn} onClick={logout}>{t('nav.logout')}</button>
         </div>
@@ -161,19 +158,19 @@ export default function AdminUsers() {
       {error && <div className={styles.error}>{error}</div>}
 
       <form className={styles.createForm} onSubmit={handleCreate}>
-        <h2 className={styles.sectionTitle}>Создать пользователя</h2>
+        <h2 className={styles.sectionTitle}>{t('admin.users.create_user')}</h2>
         <div className={styles.createFields}>
-          <input className={styles.currencyInput} placeholder="Имя пользователя" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
-          <input className={styles.currencyInput} placeholder="Пароль" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+          <input className={styles.currencyInput} placeholder={t('admin.users.username')} value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
+          <input className={styles.currencyInput} placeholder={t('admin.users.password')} type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
           <button className={createSuccess ? styles.savedBtn : styles.saveBtn} type="submit" disabled={creating}>
-            {creating ? 'Создание…' : createSuccess ? 'Создано ✓' : 'Создать'}
+            {creating ? `${t('common.save')}…` : createSuccess ? `${t('common.save')} ✓` : t('common.save')}
           </button>
         </div>
         {createError && <div className={styles.error}>{createError}</div>}
       </form>
 
       {loading ? (
-        <div className={styles.empty}>{t('common.loading')}</div>
+        <div className={styles.empty}>Загрузка…</div>
       ) : (
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
@@ -181,7 +178,7 @@ export default function AdminUsers() {
               <tr>
                 <th>{t('admin.users.table.id')}</th>
                 <th>{t('admin.users.table.username')}</th>
-                <th>{t('admin.users.table.actions')}</th>
+                <th>{t('admin.users.password')}</th>
                 <th>{t('admin.users.status')}</th>
                 <th>Role</th>
                 <th>{t('admin.users.currencies')}</th>
@@ -213,7 +210,7 @@ export default function AdminUsers() {
                         type="password"
                         value={editPassword}
                         onChange={(e) => setEditPassword(e.target.value)}
-                        placeholder="(leave empty to keep)"
+                        placeholder="(оставить пусто)"
                       />
                     ) : (
                       <span style={{ color: '#aaa', fontSize: '12px' }}>••••••</span>
@@ -226,12 +223,12 @@ export default function AdminUsers() {
                       disabled={saving[u.id]}
                       style={{ border: 'none', cursor: 'pointer', fontSize: 'inherit' }}
                     >
-                      {u.is_active ? `✓ ${t('admin.users.active')}` : `✕ ${t('admin.users.inactive')}`}
+                      {u.is_active ? '✓ Активен' : '✕ Неактивен'}
                     </button>
                   </td>
                   <td>
                     <span className={u.is_admin ? styles.badgeAdmin : styles.badgeUser}>
-                      {u.is_admin ? 'Admin' : 'User'}
+                      {u.is_admin ? 'Админ' : 'Пользователь'}
                     </span>
                   </td>
                   <td>
@@ -250,14 +247,14 @@ export default function AdminUsers() {
                           onClick={() => handleEditSubmit(u.id)}
                           disabled={saving[u.id]}
                         >
-                          {saving[u.id] ? 'Saving…' : t('common.save')}
+                          {saving[u.id] ? 'Сохранение…' : 'Сохранить'}
                         </button>
                         <button
                           className={styles.resetBtn}
                           onClick={() => setEditingId(null)}
                           disabled={saving[u.id]}
                         >
-                          {t('common.cancel')}
+                          Отмена
                         </button>
                       </>
                     ) : (
@@ -267,14 +264,14 @@ export default function AdminUsers() {
                           onClick={() => handleSave(u.id)}
                           disabled={saving[u.id]}
                         >
-                          {saving[u.id] ? 'Saving…' : saved[u.id] ? 'Saved ✓' : t('common.save')}
+                          {saving[u.id] ? 'Сохранение…' : saved[u.id] ? 'Сохранено ✓' : 'Сохранить'}
                         </button>
                         <button
                           className={styles.deleteBtn}
                           onClick={() => handleDelete(u.id)}
                           disabled={saving[u.id]}
                         >
-                          {t('common.delete')}
+                          Удалить
                         </button>
                       </>
                     )}
