@@ -1,121 +1,104 @@
 .page {
-  min-height: calc(100vh - 52px);
-  background-color: #0a0a0a;
-  display: flex;
-  flex-direction: column;
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  padding: 0 0 40px;
 }
 
 .breadcrumb {
-  padding: 14px 20px;
+  background: #111;
+  border-bottom: 1px solid #222;
+  padding: 14px 28px;
   font-size: 13px;
-  color: #808080;
-  background-color: #0f0f0f;
-  border-bottom: 1px solid #1a1a1a;
+  color: #888;
 }
 
 .tableWrapper {
-  flex: 1;
   overflow-x: auto;
-  background-color: #0f0f0f;
+  padding: 20px 28px 0;
 }
 
 .table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
   font-size: 13px;
-  background-color: #0f0f0f;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-}
-
-.table thead {
-  background-color: #1a1a1a;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 .table th {
-  padding: 12px 14px;
   text-align: left;
-  font-weight: 500;
-  font-size: 12px;
-  color: #a0a0a0;
-  background-color: #1a1a1a;
+  color: #555;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 12px;
+  border-bottom: 1px solid #1e1e1e;
   white-space: nowrap;
-  border-right: 1px solid #1f1f1f;
-  border-bottom: 1px solid #2a2a2a;
-}
-
-.table th:last-child {
-  border-right: none;
 }
 
 .table td {
-  padding: 10px 14px;
-  border-right: 1px solid #1a1a1a;
+  padding: 11px 12px;
   border-bottom: 1px solid #1a1a1a;
-  color: #e0e0e0;
-  vertical-align: middle;
+  color: #ccc;
+  white-space: nowrap;
 }
 
-.table td:last-child {
-  border-right: none;
-}
-
-.rowActive {
-  background-color: #0f1520;
-  transition: background-color 0.1s ease;
-}
-
-.rowActive:hover {
-  background-color: #131c28;
-}
-
-.rowInactive {
-  background-color: #0f0f0f;
-  transition: background-color 0.1s ease;
-}
-
-.rowInactive:hover {
-  background-color: #141414;
-}
-
-.timerCell {
-  padding: 6px 14px;
+.table tbody tr:hover {
+  background: #141414;
 }
 
 .statusBadge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 4px;
+  background: #052e16;
+  color: #4ade80;
+  border: 1px solid #166534;
+  border-radius: 5px;
+  padding: 2px 8px;
   font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.statusBadgePending {
+  background: #1c1917;
+  color: #f87171;
+  border: 1px solid #7f1d1d;
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
 }
 
 .cell {
   color: #d4d4d4;
-  white-space: nowrap;
 }
 
 .idCell {
   color: #808080;
   font-size: 12px;
-  white-space: nowrap;
   font-family: 'Courier New', monospace;
 }
 
 .amountCell {
   color: #e0e0e0;
   font-weight: 600;
-  white-space: nowrap;
 }
 
 .emptyState {
   text-align: center;
   padding: 60px;
-  color: #606060;
+  color: #555;
   font-size: 14px;
+}
+
+.timerCell {
+  padding: 6px 14px;
+}
+
+.rowInactive {
+  background: #0f0f0f;
+}
+
+.rowInactive:hover {
+  background: #141414;
 }

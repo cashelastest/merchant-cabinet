@@ -30,8 +30,9 @@ class PayoutResponse(BaseModel):
     card_number: Optional[str] = None
     phone_number: Optional[str] = None
     bank_name: Optional[str] = None
+    receipt_url: Optional[str] = None
     status: str
     created_at: datetime
-    redirect_url: str
+    redirect_url: str = ""
 
     model_config = {"from_attributes": True}

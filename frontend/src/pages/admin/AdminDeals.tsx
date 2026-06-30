@@ -11,14 +11,14 @@ interface AdminPayout {
   amount: number;
   wallet_address: string;
   currency: string;
-  card_holder?: string | null;
-  card_number?: string | null;
-  phone_number?: string | null;
-  bank_name?: string | null;
-  receipt_url?: string | null;
+  card_holder: string | null;
+  card_number: string | null;
+  phone_number: string | null;
+  bank_name: string | null;
+  receipt_url: string | null;
   status: string;
   created_at: string;
-  user_username?: string | null;
+  user_username: string | null;
 }
 
 interface AdminUser {
@@ -188,9 +188,11 @@ export default function AdminPayouts() {
                 <th>{t('admin.payouts.table.user')}</th>
                 <th>{t('admin.payouts.table.amount')}</th>
                 <th>{t('admin.payouts.table.currency')}</th>
-                <th>{t('admin.payouts.table.wallet')}</th>
+                <th>Получатель</th>
+                <th>Номер карты</th>
+                <th>Телефон</th>
+                <th>Банк</th>
                 <th>{t('admin.payouts.table.status')}</th>
-                <th>{t('admin.payouts.table.created_at')}</th>
                 <th>{t('admin.payouts.table.receipt')}</th>
               </tr>
             </thead>
@@ -209,13 +211,15 @@ export default function AdminPayouts() {
                   </td>
                   <td>{p.amount.toLocaleString()}</td>
                   <td>{p.currency}</td>
-                  <td>{p.wallet_address.substring(0, 10)}...</td>
+                  <td>{p.card_holder || '—'}</td>
+                  <td>{p.card_number || '—'}</td>
+                  <td>{p.phone_number || '—'}</td>
+                  <td>{p.bank_name || '—'}</td>
                   <td>
                     <span className={p.status === 'completed' ? styles.badgeActive : styles.badgePaused}>
                       {p.status}
                     </span>
                   </td>
-                  <td>{fmt(p.created_at)}</td>
                   <td style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     <label style={{
                       backgroundColor: '#0066cc', color: '#fff', padding: '6px 12px',

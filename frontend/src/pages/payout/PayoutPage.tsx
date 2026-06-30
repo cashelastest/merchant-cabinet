@@ -26,6 +26,7 @@ interface Payout {
   status: string;
   created_at: string;
   receipt_url?: string;
+  user_username?: string;
 }
 
 export default function PayoutPage() {
@@ -108,16 +109,16 @@ export default function PayoutPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Receipts</th>
-              <th>Estimate</th>
-              <th>{t('deals.table.request_id')}</th>
-              <th>{t('deals.table.status')}</th>
-              <th>{t('deals.table.currency')}</th>
-              <th>Card Holder</th>
-              <th>Card Number</th>
-              <th>Phone Number</th>
-              <th>External Bank Name</th>
-              <th>{t('deals.table.amount')}</th>
+              <th>ID</th>
+              <th>Обработал</th>
+              <th>Сумма</th>
+              <th>Валюта</th>
+              <th>Получатель</th>
+              <th>Номер карты</th>
+              <th>Телефон</th>
+              <th>Банк</th>
+              <th>Статус</th>
+              <th>Чек</th>
             </tr>
           </thead>
           <tbody>
@@ -136,13 +137,26 @@ export default function PayoutPage() {
 
               return (
                 <tr key={p.id} className={styles.rowInactive}>
+                  <td className={styles.idCell}>#{p.id}</td>
+                  <td>{p.user_username || '—'}</td>
+                  <td className={styles.amountCell}>{p.amount}</td>
+                  <td>{p.currency}</td>
+                  <td>{p.card_holder || '—'}</td>
+                  <td>{p.card_number || '—'}</td>
+                  <td>{p.phone_number || '—'}</td>
+                  <td>{p.bank_name || '—'}</td>
+                  <td>
+                    <span className={p.status === 'completed' ? styles.statusBadge : styles.statusBadgePending}>
+                      {p.status}
+                    </span>
+                  </td>
                   <td style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     <label style={{
                       backgroundColor: '#0066cc', color: '#fff', padding: '6px 12px',
                       borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
                       border: 'none', display: 'block',
                     }}>
-                      {uploadingReceipt[p.id] ? 'Uploading...' : 'Upload'}
+                      {uploadingReceipt[p.id] ? 'Загрузка...' : 'Загрузить'}
                       <input
                         type="file"
                         onChange={(e) => {
@@ -162,46 +176,10 @@ export default function PayoutPage() {
                           border: 'none',
                         }}
                       >
-                        View
+                        Просмотр
                       </button>
                     )}
                   </td>
-
-                  <td className={styles.timerCell}>
-                    <CountdownTimer receivedAt={p.created_at} isActive={p.status === 'pending'} estimate={300} />
-                  </td>
-
-                  <td className={styles.idCell}>#{p.id}</td>
-
-                  <td>
-                    <select
-                      value={p.status}
-                      onChange={(e) => handleStatusChange(p.id, e.target.value)}
-                      style={{
-                        backgroundColor: sc.bg,
-                        color: sc.color,
-                        border: 'none',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        fontSize: '11px',
-                      }}
-                    >
-                      {PAYOUT_STATUSES.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-
-                  <td className={styles.cell}>{p.currency}</td>
-                  <td className={styles.cell}>{p.card_holder || '—'}</td>
-                  <td className={styles.cell}>{p.card_number || '—'}</td>
-                  <td className={styles.cell}>{p.phone_number || '—'}</td>
-                  <td className={styles.cell}>{p.bank_name || '—'}</td>
-                  <td className={styles.amountCell}>{p.amount} {p.currency}</td>
                 </tr>
               );
             })}

@@ -95,9 +95,9 @@ async def list_payouts(
             card_number=p.card_number,
             phone_number=p.phone_number,
             bank_name=p.bank_name,
+            receipt_url=p.receipt_url,
             status=p.status,
             created_at=p.created_at,
-            redirect_url="",
         )
         for p in payouts
     ]
