@@ -161,6 +161,12 @@
         "total_payouts": "Всього виплат",
         "total_amount": "Разом"
       },
+      "columns": {
+        "card_holder": "Власник карти",
+        "card_number": "Номер карти",
+        "phone_number": "Телефон",
+        "bank_name": "Банк"
+      },
       "buttons": {
         "upload": "Завантажити",
         "uploading": "Завантаження...",

@@ -54,7 +54,7 @@ async def get_user(
     _: User = Depends(require_admin),
     service: UserService = Depends(get_user_service),
 ):
-    user = await service.repository.get_by_id(user_id)
+    user = await service.repository.get_with_currencies(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return {
@@ -62,7 +62,7 @@ async def get_user(
         "username": user.username,
         "is_active": user.is_active,
         "is_admin": user.is_admin,
-        "balance": 0,
+        "balance": user.balance,
         "currencies": [c.xml for c in user.currencies],
     }
 

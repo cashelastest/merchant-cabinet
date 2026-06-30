@@ -165,6 +165,12 @@
         "total_payouts": "Всего выплат",
         "total_amount": "Сумма"
       },
+      "columns": {
+        "card_holder": "Получатель",
+        "card_number": "Номер карты",
+        "phone_number": "Телефон",
+        "bank_name": "Банк"
+      },
       "buttons": {
         "upload": "Загрузить",
         "uploading": "Загрузка...",

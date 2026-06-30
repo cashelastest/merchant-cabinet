@@ -161,6 +161,12 @@
         "total_payouts": "Total Payouts",
         "total_amount": "Total Amount"
       },
+      "columns": {
+        "card_holder": "Cardholder",
+        "card_number": "Card Number",
+        "phone_number": "Phone",
+        "bank_name": "Bank"
+      },
       "buttons": {
         "upload": "Upload",
         "uploading": "Uploading...",

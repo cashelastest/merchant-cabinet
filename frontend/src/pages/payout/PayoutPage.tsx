@@ -109,16 +109,16 @@ export default function PayoutPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Обработал</th>
-              <th>Сумма</th>
-              <th>Валюта</th>
-              <th>Получатель</th>
-              <th>Номер карты</th>
-              <th>Телефон</th>
-              <th>Банк</th>
-              <th>Статус</th>
-              <th>Чек</th>
+              <th>{t('admin.payouts.table.id')}</th>
+              <th>{t('admin.payouts.table.user')}</th>
+              <th>{t('admin.payouts.table.amount')}</th>
+              <th>{t('admin.payouts.table.currency')}</th>
+              <th>{t('admin.payouts.columns.card_holder')}</th>
+              <th>{t('admin.payouts.columns.card_number')}</th>
+              <th>{t('admin.payouts.columns.phone_number')}</th>
+              <th>{t('admin.payouts.columns.bank_name')}</th>
+              <th>{t('admin.payouts.table.status')}</th>
+              <th>{t('admin.payouts.table.receipt')}</th>
             </tr>
           </thead>
           <tbody>
@@ -146,9 +146,25 @@ export default function PayoutPage() {
                   <td>{p.phone_number || '—'}</td>
                   <td>{p.bank_name || '—'}</td>
                   <td>
-                    <span className={p.status === 'completed' ? styles.statusBadge : styles.statusBadgePending}>
-                      {p.status}
-                    </span>
+                    <select
+                      value={p.status}
+                      onChange={(e) => handleStatusChange(p.id, e.target.value)}
+                      style={{
+                        backgroundColor: STATUS_COLORS[p.status]?.bg || '#1a3a4d',
+                        color: STATUS_COLORS[p.status]?.color || '#60a5fa',
+                        border: '1px solid #333',
+                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {PAYOUT_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     <label style={{
