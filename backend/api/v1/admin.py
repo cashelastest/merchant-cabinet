@@ -13,7 +13,7 @@ import uuid
 from core.dependencies import get_user_service, require_admin, get_session
 from services.user import UserService
 from schemas import CreateUserRequest
-from models import User, Deal, ApiKeyLog, Payout
+from models import User, Deal, ApiKeyLog, Payout, BalanceHistory
 
 
 class CurrenciesUpdate(BaseModel):
@@ -317,6 +317,7 @@ async def get_receipt(
 @router.get("/payouts")
 async def list_payouts_admin(
     _: User = Depends(require_admin),
+    user_id: Optional[int] = Query(None),
     today: bool = Query(False),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
@@ -324,6 +325,9 @@ async def list_payouts_admin(
     session: AsyncSession = Depends(get_session),
 ):
     query = select(Payout).order_by(Payout.created_at.desc())
+
+    if user_id:
+        query = query.where(Payout.user_id == user_id)
 
     if today:
         today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -369,6 +373,82 @@ async def list_payouts_admin(
         response.append(payout_dict)
 
     return response
+
+
+@router.post("/users/{user_id}/reset-balance")
+async def reset_user_balance(
+    user_id: int,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    user = await session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    old_balance = user.balance
+    user.balance = 0
+
+    history = BalanceHistory(
+        user_id=user_id,
+        action="reset",
+        amount=old_balance,
+        reason=f"Reset by admin (was {old_balance})",
+        created_at=datetime.now(),
+    )
+    session.add(history)
+    await session.commit()
+
+    return {"id": user_id, "old_balance": old_balance, "new_balance": 0}
+
+
+@router.get("/users/{user_id}/balance-history")
+async def get_balance_history(
+    user_id: int,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    result = await session.execute(
+        select(BalanceHistory).where(BalanceHistory.user_id == user_id).order_by(BalanceHistory.created_at.desc())
+    )
+    history = result.scalars().all()
+    return [
+        {
+            "id": h.id,
+            "action": h.action,
+            "amount": h.amount,
+            "reason": h.reason,
+            "created_at": h.created_at.isoformat() if h.created_at else None,
+        }
+        for h in history
+    ]
+
+
+@router.patch("/payouts/{payout_id}/status")
+async def update_payout_status_admin(
+    payout_id: int,
+    status: str = Query(...),
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    payout = await session.get(Payout, payout_id)
+    if not payout:
+        raise HTTPException(status_code=404, detail="Payout not found")
+
+    if payout.status in ("completed", "cancelled"):
+        raise HTTPException(status_code=409, detail="Cannot change status of completed or cancelled payout")
+
+    old_status = payout.status
+    payout.status = status
+
+    if status == "completed" and old_status != "completed":
+        user = await session.get(User, payout.user_id)
+        if user:
+            user.balance += payout.amount
+
+    await session.commit()
+    await session.refresh(payout)
+
+    return {"id": payout.id, "status": payout.status}
 
 
 @router.post("/payouts/{payout_id}/receipt")

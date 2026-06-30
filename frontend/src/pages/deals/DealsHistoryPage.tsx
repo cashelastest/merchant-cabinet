@@ -4,50 +4,66 @@ import { useTranslation } from 'react-i18next';
 import adminClient from '../../api/adminClient';
 import styles from './DealsHistory.module.css';
 
-interface DealEvent {
+interface BalanceHistoryItem {
   id: number;
-  status: string;
+  action: string;
+  amount: number;
+  reason: string;
   created_at: string;
-  changed_at?: string;
 }
 
-interface Deal {
+interface Payout {
   id: number;
-  uid: string;
-  currency: string;
-  from_xml: string;
-  from_name: string;
-  to_name: string;
-  to_values: string;
+  user_id: number;
   amount: number;
+  currency: string;
+  card_holder?: string;
+  card_number?: string;
+  phone_number?: string;
+  bank_name?: string;
+  receipt_url?: string;
   status: string;
-  accepted_by_username?: string;
   created_at: string;
-  accepted_at?: string;
-  received_at?: string;
 }
 
 export default function DealsHistoryPage() {
   const { t } = useTranslation();
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const [deals, setDeals] = useState<Deal[]>([]);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [balanceHistory, setBalanceHistory] = useState<BalanceHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'payouts' | 'balance'>('payouts');
 
   useEffect(() => {
-    fetchDeals();
+    fetchUserHistory();
   }, [userId]);
 
-  const fetchDeals = async () => {
+  const fetchUserHistory = async () => {
     try {
-      const data = await adminClient
-        .get<Deal[]>(`/admin/deals?user_id=${userId}`)
-        .then((r) => r.data);
-      setDeals(data);
+      const [payoutsData, balanceData] = await Promise.all([
+        adminClient.get<Payout[]>(`/admin/payouts?user_id=${userId}`).then((r) => r.data),
+        adminClient.get<BalanceHistoryItem[]>(`/admin/users/${userId}/balance-history`).then((r) => r.data),
+      ]);
+      setPayouts(payoutsData);
+      setBalanceHistory(balanceData);
     } catch {
-      alert('Failed to load deals history');
+      alert('Failed to load history');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResetBalance = async () => {
+    if (!window.confirm('Are you sure you want to reset this user\'s balance to 0?')) {
+      return;
+    }
+    try {
+      await adminClient.post(`/admin/users/${userId}/reset-balance`);
+      fetchUserHistory();
+      alert('Balance reset to 0');
+    } catch (e: any) {
+      alert(`Failed to reset balance: ${e.response?.data?.detail || 'Unknown error'}`);
     }
   };
 
@@ -80,90 +96,129 @@ export default function DealsHistoryPage() {
           cursor: 'pointer', fontSize: '14px', textDecoration: 'underline',
           marginBottom: '15px',
         }}>
-          ← Вернуться в выплаты
+          ← Вернуться в админку выплат
         </button>
-        <h1 className={styles.pageTitle}>{t('nav.history')} (User #{userId})</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1 className={styles.pageTitle}>История пользователя (User #{userId})</h1>
+          <button
+            onClick={handleResetBalance}
+            style={{
+              backgroundColor: '#ef4444', color: '#fff', border: 'none',
+              cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
+              padding: '8px 16px', borderRadius: '4px',
+            }}
+          >
+            Сбросить баланс на 0
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <button
+          onClick={() => setTab('payouts')}
+          style={{
+            padding: '8px 16px', borderRadius: '4px', border: 'none',
+            backgroundColor: tab === 'payouts' ? '#0066cc' : '#222',
+            color: '#fff', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
+          }}
+        >
+          Выплаты
+        </button>
+        <button
+          onClick={() => setTab('balance')}
+          style={{
+            padding: '8px 16px', borderRadius: '4px', border: 'none',
+            backgroundColor: tab === 'balance' ? '#0066cc' : '#222',
+            color: '#fff', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
+          }}
+        >
+          История баланса
+        </button>
       </div>
 
       {loading ? (
         <div className={styles.empty}>{t('common.loading')}</div>
-      ) : deals.length === 0 ? (
+      ) : tab === 'payouts' ? (
+        payouts.length === 0 ? (
+          <div className={styles.empty}>{t('common.no_data')}</div>
+        ) : (
+          <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
+            <table style={{
+              width: '100%', borderCollapse: 'collapse', fontSize: '13px',
+              background: '#111', border: '1px solid #222', borderRadius: '4px',
+            }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #222' }}>
+                  <th style={{ textAlign: 'left', padding: '12px', color: '#666', fontWeight: '600' }}>ID</th>
+                  <th style={{ textAlign: 'left', padding: '12px', color: '#666', fontWeight: '600' }}>Сумма</th>
+                  <th style={{ textAlign: 'left', padding: '12px', color: '#666', fontWeight: '600' }}>Валюта</th>
+                  <th style={{ textAlign: 'left', padding: '12px', color: '#666', fontWeight: '600' }}>Получатель</th>
+                  <th style={{ textAlign: 'left', padding: '12px', color: '#666', fontWeight: '600' }}>Статус</th>
+                  <th style={{ textAlign: 'left', padding: '12px', color: '#666', fontWeight: '600' }}>Дата</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payouts.map((payout) => (
+                  <tr key={payout.id} style={{ borderBottom: '1px solid #222' }}>
+                    <td style={{ padding: '12px', color: '#888' }}>#{payout.id}</td>
+                    <td style={{ padding: '12px', color: '#ccc', fontWeight: '600' }}>{payout.amount.toFixed(2)}</td>
+                    <td style={{ padding: '12px', color: '#ccc' }}>{payout.currency}</td>
+                    <td style={{ padding: '12px', color: '#ccc' }}>{payout.card_holder || '—'}</td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{
+                        padding: '2px 8px', borderRadius: '3px', fontSize: '11px', fontWeight: '600',
+                        backgroundColor: payout.status === 'completed' ? '#052e16' : '#1c1917',
+                        color: payout.status === 'completed' ? '#4ade80' : '#f87171',
+                      }}>
+                        {payout.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', color: '#666', fontSize: '11px' }}>
+                      {formatDate(payout.created_at)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      ) : balanceHistory.length === 0 ? (
         <div className={styles.empty}>{t('common.no_data')}</div>
       ) : (
-        <div className={styles.dealsContainer}>
-          {deals.map((deal) => (
-            <div key={deal.id} className={styles.dealCard}>
-              <div className={styles.dealHeader}>
-                <div>
-                  <div className={styles.dealId}>ID: {deal.uid}</div>
-                  <div className={styles.dealAmount}>
-                    {deal.amount} {deal.currency} {deal.from_xml}
-                  </div>
-                </div>
-                <div style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px',
-                }}>
-                  <span className={styles.statusBadge} style={{
-                    backgroundColor: getStatusColor(deal.status) + '33',
-                    color: getStatusColor(deal.status),
-                    border: `1px solid ${getStatusColor(deal.status)}`,
-                  }}>
-                    {deal.status}
-                  </span>
-                  <span className={styles.dealDate}>
-                    {formatDate(deal.created_at)}
-                  </span>
-                </div>
-              </div>
-
-              <div className={styles.dealDetails}>
-                <div className={styles.detailRow}>
-                  <span className={styles.label}>From:</span>
-                  <span className={styles.value}>{deal.from_name}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.label}>To:</span>
-                  <span className={styles.value}>{deal.to_name}</span>
-                </div>
-                {deal.accepted_by_username && (
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Processed by:</span>
-                    <span className={styles.value}>{deal.accepted_by_username}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className={styles.timeline}>
-                <div className={styles.timelineItem}>
-                  <div className={styles.timelineMarker} style={{ backgroundColor: '#888' }} />
-                  <div>
-                    <div className={styles.timelineLabel}>Created</div>
-                    <div className={styles.timelineTime}>{formatDate(deal.created_at)}</div>
-                  </div>
-                </div>
-
-                {deal.accepted_at && (
-                  <div className={styles.timelineItem}>
-                    <div className={styles.timelineMarker} style={{ backgroundColor: '#60a5fa' }} />
-                    <div>
-                      <div className={styles.timelineLabel}>Accepted</div>
-                      <div className={styles.timelineTime}>{formatDate(deal.accepted_at)}</div>
-                    </div>
-                  </div>
-                )}
-
-                {deal.received_at && (
-                  <div className={styles.timelineItem}>
-                    <div className={styles.timelineMarker} style={{ backgroundColor: '#4ade80' }} />
-                    <div>
-                      <div className={styles.timelineLabel}>Received/Completed</div>
-                      <div className={styles.timelineTime}>{formatDate(deal.received_at)}</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+        <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
+          <table style={{
+            width: '100%', borderCollapse: 'collapse', fontSize: '13px',
+            background: '#111', border: '1px solid #222', borderRadius: '4px',
+          }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #222' }}>
+                <th style={{ textAlign: 'left', padding: '12px', color: '#666', fontWeight: '600' }}>Action</th>
+                <th style={{ textAlign: 'left', padding: '12px', color: '#666', fontWeight: '600' }}>Amount</th>
+                <th style={{ textAlign: 'left', padding: '12px', color: '#666', fontWeight: '600' }}>Reason</th>
+                <th style={{ textAlign: 'left', padding: '12px', color: '#666', fontWeight: '600' }}>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {balanceHistory.map((item) => (
+                <tr key={item.id} style={{ borderBottom: '1px solid #222' }}>
+                  <td style={{ padding: '12px', color: '#ccc' }}>
+                    <span style={{
+                      padding: '2px 8px', borderRadius: '3px', fontSize: '11px', fontWeight: '600',
+                      backgroundColor: item.action === 'reset' ? '#4d1a1a' : '#052e16',
+                      color: item.action === 'reset' ? '#ef4444' : '#4ade80',
+                    }}>
+                      {item.action}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px', color: '#ccc', fontWeight: '600' }}>{item.amount.toFixed(2)}</td>
+                  <td style={{ padding: '12px', color: '#888' }}>{item.reason}</td>
+                  <td style={{ padding: '12px', color: '#666', fontSize: '11px' }}>
+                    {new Date(item.created_at + (item.created_at.endsWith('Z') ? '' : 'Z')).toLocaleString('ru-RU')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

@@ -7,10 +7,11 @@ import aiofiles
 from pathlib import Path
 
 from core.dependencies import get_current_user, get_session, _decode_token, SessionLocal
-from models import User
+from models import User, BalanceHistory
 from repositories.payout import PayoutRepository
 from repositories.user import UserRepository
 from schemas import PayoutRequest, PayoutResponse
+from datetime import datetime
 
 router = APIRouter(prefix="/payout")
 
@@ -48,7 +49,6 @@ async def request_payout(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    user.balance += data.amount
     repo = PayoutRepository(session)
     payout = await repo.create(
         user.id,
@@ -130,6 +130,14 @@ async def update_payout_status(
 
     if status == "completed" and old_status != "completed":
         user.balance += payout.amount
+        history = BalanceHistory(
+            user_id=user.id,
+            action="payout_completed",
+            amount=float(payout.amount),
+            reason=f"Payout #{payout.id} completed ({payout.currency})",
+            created_at=datetime.now(),
+        )
+        session.add(history)
 
     await session.commit()
     await session.refresh(payout)

@@ -40,6 +40,8 @@ export default function AdminPayouts() {
   const [payouts, setPayouts] = useState<AdminPayout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [userBalance, setUserBalance] = useState<number | null>(null);
   const [uploadingReceipt, setUploadingReceipt] = useState<Record<number, boolean>>({});
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
 
@@ -97,6 +99,28 @@ export default function AdminPayouts() {
       alert('Failed to upload receipt');
     } finally {
       setUploadingReceipt((p) => ({ ...p, [payoutId]: false }));
+    }
+  };
+
+  const handleStatusChange = async (payoutId: number, newStatus: string) => {
+    try {
+      await adminClient.patch(`/admin/payouts/${payoutId}/status?status=${newStatus}`);
+      setPayouts((prev) => prev.map((p) => p.id === payoutId ? { ...p, status: newStatus } : p));
+    } catch (e: any) {
+      alert(`Failed to update status: ${e.response?.data?.detail || 'Unknown error'}`);
+    }
+  };
+
+  const handleResetBalance = async (userId: number) => {
+    if (!window.confirm('Are you sure you want to reset this user\'s balance to 0?')) {
+      return;
+    }
+    try {
+      await adminClient.post(`/admin/users/${userId}/reset-balance`);
+      setUserBalance(0);
+      alert('Balance reset to 0');
+    } catch (e: any) {
+      alert(`Failed to reset balance: ${e.response?.data?.detail || 'Unknown error'}`);
     }
   };
 
@@ -210,9 +234,32 @@ export default function AdminPayouts() {
                   <td>{p.phone_number || '—'}</td>
                   <td>{p.bank_name || '—'}</td>
                   <td>
-                    <span className={p.status === 'completed' ? styles.badgeActive : styles.badgePaused}>
-                      {p.status}
-                    </span>
+                    {p.status === 'completed' || p.status === 'cancelled' ? (
+                      <span className={p.status === 'completed' ? styles.badgeActive : styles.badgePaused}>
+                        {p.status}
+                      </span>
+                    ) : (
+                      <select
+                        value={p.status}
+                        onChange={(e) => handleStatusChange(p.id, e.target.value)}
+                        style={{
+                          backgroundColor: '#1a1a1a',
+                          color: p.status === 'completed' ? '#4ade80' : '#f87171',
+                          border: '1px solid #333',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                        }}
+                      >
+                        <option value="pending">pending</option>
+                        <option value="processing">processing</option>
+                        <option value="completed">completed</option>
+                        <option value="failed">failed</option>
+                        <option value="cancelled">cancelled</option>
+                      </select>
+                    )}
                   </td>
                   <td style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     <label style={{

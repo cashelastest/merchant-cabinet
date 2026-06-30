@@ -8,9 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.ws_manager import manager
 from core.dependencies import get_current_user, get_deal_service, redis_service, get_session, _decode_token, SessionLocal
 from services.deal import DealService
-from models import User
+from models import User, BalanceHistory
 from schemas import DealCreateRequest, DealResponse
 from repositories.user import UserRepository
+from datetime import datetime
 
 router = APIRouter()
 
@@ -129,7 +130,10 @@ async def update_deal_status(
         raise HTTPException(status_code=404, detail="Deal not found")
 
     if deal.status in ("accepted", "refused"):
-        raise HTTPException(status_code=409, detail="Cannot change status of completed or refused deal")
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot change status of completed or refused deal",
+        )
 
     old_status = deal.status
     deal.status = status
@@ -137,6 +141,14 @@ async def update_deal_status(
     if status == "accepted" and old_status != "accepted":
         amount = deal.to_values.get("amount", 0) if deal.to_values else 0
         user.balance += float(amount)
+        history = BalanceHistory(
+            user_id=user.id,
+            action="deal_accepted",
+            amount=float(amount),
+            reason=f"Deal #{deal.id} accepted ({deal.from_xml})",
+            created_at=datetime.now(),
+        )
+        session.add(history)
 
     await session.commit()
     await session.refresh(deal)
