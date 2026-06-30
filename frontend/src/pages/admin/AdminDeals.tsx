@@ -41,6 +41,8 @@ export default function AdminPayouts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [userDeals, setUserDeals] = useState<any[]>([]);
+  const [loadingDeals, setLoadingDeals] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState<Record<number, boolean>>({});
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
 
@@ -88,6 +90,15 @@ export default function AdminPayouts() {
     try {
       const user = await adminClient.get<AdminUser>(`/admin/users/${userId}`).then((r) => r.data);
       setSelectedUser(user);
+      setLoadingDeals(true);
+      try {
+        const deals = await adminClient.get<any[]>(`/admin/deals?user_id=${userId}`).then((r) => r.data);
+        setUserDeals(deals);
+      } catch {
+        setUserDeals([]);
+      } finally {
+        setLoadingDeals(false);
+      }
     } catch {
       alert('Failed to load user details');
     }
@@ -261,10 +272,12 @@ export default function AdminPayouts() {
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          overflowY: 'auto',
         }} onClick={() => setSelectedUser(null)}>
           <div style={{
             backgroundColor: '#1a1a1a', color: '#fff', padding: '20px', borderRadius: '8px',
-            maxWidth: '500px', width: '90%', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+            maxWidth: '900px', width: '90%', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+            margin: 'auto',
           }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '15px' }}>
               {t('user_details.title')}
@@ -278,12 +291,59 @@ export default function AdminPayouts() {
             <div style={{ marginBottom: '10px' }}>
               <strong>{t('user_details.status')}:</strong> {selectedUser.is_active ? t('user_details.active') : t('user_details.inactive')}
             </div>
-            <div style={{ marginBottom: '10px' }}>
+            <div style={{ marginBottom: '15px' }}>
               <strong>{t('user_details.payout_currencies')}:</strong> {selectedUser.currencies.join(', ')}
             </div>
+
+            <hr style={{ borderColor: '#333', marginBottom: '15px' }} />
+
+            <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>
+              История заявок
+            </div>
+            {loadingDeals ? (
+              <div>{t('common.loading')}</div>
+            ) : userDeals.length === 0 ? (
+              <div style={{ color: '#666' }}>{t('common.no_data')}</div>
+            ) : (
+              <table style={{
+                width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '15px',
+              }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #333' }}>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#888' }}>ID</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#888' }}>Валюта</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#888' }}>Сумма</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#888' }}>Статус</th>
+                    <th style={{ textAlign: 'left', padding: '8px', color: '#888' }}>Создана</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userDeals.map((deal) => (
+                    <tr key={deal.id} style={{ borderBottom: '1px solid #222' }}>
+                      <td style={{ padding: '8px', color: '#ccc' }}>#{deal.id}</td>
+                      <td style={{ padding: '8px', color: '#ccc' }}>{deal.currency}</td>
+                      <td style={{ padding: '8px', color: '#ccc' }}>{deal.amount}</td>
+                      <td style={{ padding: '8px', color: '#ccc' }}>
+                        <span style={{
+                          padding: '2px 6px', borderRadius: '3px', fontSize: '11px',
+                          backgroundColor: deal.status === 'accepted' ? '#052e16' : '#4d1a1a',
+                          color: deal.status === 'accepted' ? '#4ade80' : '#ef4444',
+                        }}>
+                          {deal.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '8px', color: '#888', fontSize: '11px' }}>
+                        {deal.created_at ? new Date(deal.created_at).toLocaleDateString('ru-RU') : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
             <button onClick={() => setSelectedUser(null)} style={{
               backgroundColor: '#2a2a2a', color: '#fff', border: 'none', padding: '8px 16px',
-              borderRadius: '4px', cursor: 'pointer', marginTop: '10px',
+              borderRadius: '4px', cursor: 'pointer',
             }}>
               {t('common.close')}
             </button>

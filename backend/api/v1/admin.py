@@ -214,6 +214,7 @@ async def delete_user(
 @router.get("/deals")
 async def list_deals_admin(
     _: User = Depends(require_admin),
+    user_id: Optional[int] = Query(None),
     today: bool = Query(False),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
@@ -221,6 +222,9 @@ async def list_deals_admin(
     session: AsyncSession = Depends(get_session),
 ):
     query = select(Deal).order_by(Deal.created_at.desc())
+
+    if user_id:
+        query = query.where(Deal.user_id == user_id)
 
     if today:
         today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)

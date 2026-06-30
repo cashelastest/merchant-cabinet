@@ -123,8 +123,13 @@ async def update_payout_status(
         raise HTTPException(status_code=404, detail="Payout not found")
 
     payout.status = status
+
+    if status == "completed" and payout.status != "completed":
+        user.balance += payout.amount
+
     await session.commit()
     await session.refresh(payout)
+    await session.refresh(user)
 
     # Broadcast status update to WebSocket clients
     await payout_manager.broadcast_to_user(
@@ -145,9 +150,9 @@ async def update_payout_status(
         card_number=payout.card_number,
         phone_number=payout.phone_number,
         bank_name=payout.bank_name,
+        receipt_url=payout.receipt_url,
         status=payout.status,
         created_at=payout.created_at,
-        redirect_url="",
     )
 
 
