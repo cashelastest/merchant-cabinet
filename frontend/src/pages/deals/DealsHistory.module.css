@@ -1,0 +1,148 @@
+.page {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  padding: 20px 28px 40px;
+}
+
+.topbar {
+  margin-bottom: 30px;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.empty {
+  text-align: center;
+  padding: 60px;
+  color: #555;
+  font-size: 14px;
+}
+
+.dealsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+  gap: 20px;
+}
+
+.dealCard {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.dealHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #222;
+}
+
+.dealId {
+  font-size: 13px;
+  font-weight: 600;
+  color: #888;
+  margin-bottom: 6px;
+}
+
+.dealAmount {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.statusBadge {
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.dealDate {
+  font-size: 11px;
+  color: #666;
+}
+
+.dealDetails {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #0f0f0f;
+  border-radius: 4px;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.detailRow:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  color: #666;
+  min-width: 100px;
+}
+
+.value {
+  color: #ccc;
+  text-align: right;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 12px;
+  bottom: 0;
+  width: 2px;
+  background: #222;
+}
+
+.timelineItem {
+  display: flex;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.timelineItem:last-child {
+  margin-bottom: 0;
+}
+
+.timelineMarker {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin-top: 2px;
+  margin-left: -26px;
+  flex-shrink: 0;
+  border: 2px solid #0a0a0a;
+}
+
+.timelineLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ccc;
+  margin-bottom: 4px;
+}
+
+.timelineTime {
+  font-size: 11px;
+  color: #666;
+}

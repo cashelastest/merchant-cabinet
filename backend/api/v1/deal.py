@@ -128,9 +128,19 @@ async def update_deal_status(
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
 
+    if deal.status in ("accepted", "refused"):
+        raise HTTPException(status_code=409, detail="Cannot change status of completed or refused deal")
+
+    old_status = deal.status
     deal.status = status
+
+    if status == "accepted" and old_status != "accepted":
+        amount = deal.to_values.get("amount", 0) if deal.to_values else 0
+        user.balance += float(amount)
+
     await session.commit()
     await session.refresh(deal)
+    await session.refresh(user)
 
     return {"id": deal.id, "status": deal.status}
 

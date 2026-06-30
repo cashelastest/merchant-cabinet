@@ -103,7 +103,7 @@ export default function PayoutPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.breadcrumb}>Payouts</div>
+      <div className={styles.breadcrumb}>{t('admin.payouts.title')}</div>
 
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
@@ -146,25 +146,32 @@ export default function PayoutPage() {
                   <td>{p.phone_number || '—'}</td>
                   <td>{p.bank_name || '—'}</td>
                   <td>
-                    <select
-                      value={p.status}
-                      onChange={(e) => handleStatusChange(p.id, e.target.value)}
-                      style={{
-                        backgroundColor: STATUS_COLORS[p.status]?.bg || '#1a3a4d',
-                        color: STATUS_COLORS[p.status]?.color || '#60a5fa',
-                        border: '1px solid #333',
-                        borderRadius: '4px',
-                        padding: '4px 8px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                      }}
-                    >
-                      {PAYOUT_STATUSES.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
+                    {p.status === 'completed' || p.status === 'cancelled' ? (
+                      <span className={p.status === 'completed' ? styles.statusBadge : styles.statusBadgePending}>
+                        {p.status}
+                      </span>
+                    ) : (
+                      <select
+                        value={p.status}
+                        onChange={(e) => handleStatusChange(p.id, e.target.value)}
+                        style={{
+                          backgroundColor: '#0a0a0a',
+                          color: STATUS_COLORS[p.status]?.color || '#60a5fa',
+                          border: `1px solid ${STATUS_COLORS[p.status]?.color || '#60a5fa'}`,
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                        }}
+                      >
+                        {PAYOUT_STATUSES.map((status) => (
+                          <option key={status} value={status} style={{ backgroundColor: '#1a1a1a', color: '#fff' }}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </td>
                   <td style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     <label style={{
@@ -172,7 +179,7 @@ export default function PayoutPage() {
                       borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
                       border: 'none', display: 'block',
                     }}>
-                      {uploadingReceipt[p.id] ? 'Загрузка...' : 'Загрузить'}
+                      {uploadingReceipt[p.id] ? t('admin.payouts.buttons.uploading') : t('admin.payouts.buttons.upload')}
                       <input
                         type="file"
                         onChange={(e) => {
@@ -192,7 +199,7 @@ export default function PayoutPage() {
                           border: 'none',
                         }}
                       >
-                        Просмотр
+                        {t('admin.payouts.buttons.view')}
                       </button>
                     )}
                   </td>
@@ -213,7 +220,7 @@ export default function PayoutPage() {
             maxWidth: '600px', width: '90%', maxHeight: '80vh', overflow: 'auto',
           }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <h3 style={{ margin: 0, color: '#fff' }}>Receipt</h3>
+              <h3 style={{ margin: 0, color: '#fff' }}>{t('admin.payouts.table.receipt')}</h3>
               <button onClick={() => setViewingReceipt(null)} style={{
                 backgroundColor: '#2a2a2a', color: '#fff', border: 'none', padding: '8px 12px',
                 borderRadius: '4px', cursor: 'pointer',

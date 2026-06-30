@@ -122,9 +122,13 @@ async def update_payout_status(
     if not payout:
         raise HTTPException(status_code=404, detail="Payout not found")
 
+    if payout.status in ("completed", "cancelled"):
+        raise HTTPException(status_code=409, detail="Cannot change status of completed or cancelled payout")
+
+    old_status = payout.status
     payout.status = status
 
-    if status == "completed" and payout.status != "completed":
+    if status == "completed" and old_status != "completed":
         user.balance += payout.amount
 
     await session.commit()

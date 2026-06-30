@@ -10,6 +10,7 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminDeals from './pages/admin/AdminDeals';
 import AdminLogs from './pages/admin/AdminLogs';
+import DealsHistoryPage from './pages/deals/DealsHistoryPage';
 
 export default function App() {
   return (
@@ -31,7 +32,8 @@ export default function App() {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route element={<AdminRoute />}>
           <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/deals" element={<AdminDeals />} />
+          <Route path="/admin/payouts" element={<AdminDeals />} />
+          <Route path="/admin/deals/:userId" element={<DealsHistoryPage />} />
           <Route path="/admin/logs" element={<AdminLogs />} />
         </Route>
         <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
