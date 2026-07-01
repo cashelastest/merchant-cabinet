@@ -435,7 +435,10 @@ async def update_payout_status_admin(
         raise HTTPException(status_code=404, detail="Payout not found")
 
     if payout.status in ("completed", "cancelled"):
-        raise HTTPException(status_code=409, detail="Cannot change status of completed or cancelled payout")
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot change status of completed or cancelled payout",
+        )
 
     old_status = payout.status
     payout.status = status
@@ -444,6 +447,14 @@ async def update_payout_status_admin(
         user = await session.get(User, payout.user_id)
         if user:
             user.balance += payout.amount
+            history = BalanceHistory(
+                user_id=user.id,
+                action="payout_completed",
+                amount=float(payout.amount),
+                reason=f"Payout #{payout.id} completed ({payout.currency})",
+                created_at=datetime.now(),
+            )
+            session.add(history)
 
     await session.commit()
     await session.refresh(payout)

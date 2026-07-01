@@ -163,7 +163,8 @@
         "created_at": "Создана",
         "receipt": "Чек",
         "total_payouts": "Всего выплат",
-        "total_amount": "Сумма"
+        "total_amount": "Сумма",
+        "time": "Время"
       },
       "columns": {
         "card_holder": "Получатель",

@@ -159,7 +159,8 @@
         "created_at": "Створена",
         "receipt": "Чек",
         "total_payouts": "Всього виплат",
-        "total_amount": "Разом"
+        "total_amount": "Разом",
+        "time": "Час"
       },
       "columns": {
         "card_holder": "Власник карти",

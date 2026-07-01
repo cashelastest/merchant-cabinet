@@ -226,7 +226,6 @@ export default function AdminPayouts() {
                     ) : (
                       <span style={{ color: '#666' }}>—</span>
                     )}
-                  </td>
                   <td>{p.amount.toLocaleString()}</td>
                   <td>{p.currency}</td>
                   <td>{p.card_holder || '—'}</td>

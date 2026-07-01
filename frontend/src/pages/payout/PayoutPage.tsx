@@ -110,7 +110,7 @@ export default function PayoutPage() {
           <thead>
             <tr>
               <th>{t('admin.payouts.table.id')}</th>
-              <th>{t('admin.payouts.table.user')}</th>
+              <th>{t('admin.payouts.table.time')}</th>
               <th>{t('admin.payouts.table.amount')}</th>
               <th>{t('admin.payouts.table.currency')}</th>
               <th>{t('admin.payouts.columns.card_holder')}</th>
@@ -138,7 +138,23 @@ export default function PayoutPage() {
               return (
                 <tr key={p.id} className={styles.rowInactive}>
                   <td className={styles.idCell}>#{p.id}</td>
-                  <td>{p.user_username || '—'}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div
+                        style={{
+                          width: '32px', height: '32px', borderRadius: '50%',
+                          border: '2px solid #60a5fa', display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', fontSize: '11px', fontWeight: 'bold',
+                          color: '#60a5fa',
+                        }}
+                      >
+                        5m
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#666' }}>
+                        {new Date(p.created_at + (p.created_at.endsWith('Z') ? '' : 'Z')).toLocaleTimeString('ru-RU')}
+                      </div>
+                    </div>
+                  </td>
                   <td className={styles.amountCell}>{p.amount}</td>
                   <td>{p.currency}</td>
                   <td>{p.card_holder || '—'}</td>

@@ -159,7 +159,8 @@
         "created_at": "Created",
         "receipt": "Receipt",
         "total_payouts": "Total Payouts",
-        "total_amount": "Total Amount"
+        "total_amount": "Total Amount",
+        "time": "Time"
       },
       "columns": {
         "card_holder": "Cardholder",
