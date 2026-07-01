@@ -129,7 +129,9 @@ async def update_payout_status(
     payout.status = status
 
     if status == "completed" and old_status != "completed":
+        print(f"[PAYOUT] Updating balance for user {user.id}: {user.balance} + {payout.amount}")
         user.balance += payout.amount
+        print(f"[PAYOUT] New balance: {user.balance}")
         history = BalanceHistory(
             user_id=user.id,
             action="payout_completed",
@@ -138,10 +140,13 @@ async def update_payout_status(
             created_at=datetime.now(),
         )
         session.add(history)
+        print(f"[PAYOUT] History record added")
 
     await session.commit()
+    print(f"[PAYOUT] Commit done")
     await session.refresh(payout)
     await session.refresh(user)
+    print(f"[PAYOUT] Final user balance: {user.balance}")
 
     # Broadcast status update to WebSocket clients
     await payout_manager.broadcast_to_user(

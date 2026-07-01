@@ -446,7 +446,9 @@ async def update_payout_status_admin(
     if status == "completed" and old_status != "completed":
         user = await session.get(User, payout.user_id)
         if user:
+            print(f"[ADMIN PAYOUT] Updating balance for user {user.id}: {user.balance} + {payout.amount}")
             user.balance += payout.amount
+            print(f"[ADMIN PAYOUT] New balance: {user.balance}")
             history = BalanceHistory(
                 user_id=user.id,
                 action="payout_completed",
@@ -455,8 +457,12 @@ async def update_payout_status_admin(
                 created_at=datetime.now(),
             )
             session.add(history)
+            print(f"[ADMIN PAYOUT] History record added")
+        else:
+            print(f"[ADMIN PAYOUT] User {payout.user_id} not found!")
 
     await session.commit()
+    print(f"[ADMIN PAYOUT] Commit done")
     await session.refresh(payout)
 
     return {"id": payout.id, "status": payout.status}

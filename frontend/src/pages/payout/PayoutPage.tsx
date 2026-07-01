@@ -4,6 +4,8 @@ import client from '../../api/client';
 import CountdownTimer from '../../components/CountdownTimer/CountdownTimer';
 import styles from './PayoutPage.module.css';
 
+const FIVE_MINUTES_SECONDS = 300;
+
 const PAYOUT_STATUSES = ['pending', 'processing', 'completed', 'failed', 'cancelled'];
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
@@ -139,17 +141,12 @@ export default function PayoutPage() {
                 <tr key={p.id} className={styles.rowInactive}>
                   <td className={styles.idCell}>#{p.id}</td>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div
-                        style={{
-                          width: '32px', height: '32px', borderRadius: '50%',
-                          border: '2px solid #60a5fa', display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', fontSize: '11px', fontWeight: 'bold',
-                          color: '#60a5fa',
-                        }}
-                      >
-                        5m
-                      </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <CountdownTimer
+                        receivedAt={p.created_at}
+                        isActive={p.status !== 'completed' && p.status !== 'cancelled'}
+                        estimate={FIVE_MINUTES_SECONDS}
+                      />
                       <div style={{ fontSize: '11px', color: '#666' }}>
                         {new Date(p.created_at + (p.created_at.endsWith('Z') ? '' : 'Z')).toLocaleTimeString('ru-RU')}
                       </div>
