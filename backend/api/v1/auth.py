@@ -150,7 +150,7 @@ async def setup_2fa(user: User = Depends(get_current_user)):
 
     img = qr.make_image(fill_color="black", back_color="white")
     img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format="PNG")
+    img.save(img_byte_arr)
     img_byte_arr.seek(0)
     qr_base64 = base64.b64encode(img_byte_arr.getvalue()).decode()
     qr_url = f"data:image/png;base64,{qr_base64}"
