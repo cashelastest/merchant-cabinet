@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styles from './Header.module.css';
 import { useAuth } from '../../context/AuthContext';
@@ -8,6 +9,7 @@ import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 
 export default function Header() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user, logout, refreshUser } = useAuth();
   const isActive = user?.is_active ?? false;
 
@@ -119,6 +121,7 @@ export default function Header() {
             </>
           )}
           <button className={styles.refreshBtn} onClick={handleRefresh}>↻ Refresh</button>
+          <button className={styles.refreshBtn} onClick={() => navigate('/settings')} title="Settings">⚙</button>
           <button className={styles.logoutBtn} onClick={logout} title="Logout">⎋</button>
         </div>
       </div>

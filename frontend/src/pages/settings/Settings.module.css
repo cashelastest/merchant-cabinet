@@ -1,0 +1,300 @@
+.page {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  padding: 0 0 40px;
+}
+
+.breadcrumb {
+  background: #111;
+  border-bottom: 1px solid #222;
+  padding: 14px 28px;
+  font-size: 13px;
+  color: #888;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 28px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 30px;
+}
+
+.section {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.sectionDescription {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.tokenBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tokenDisplay {
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 4px;
+  padding: 12px;
+  overflow-x: auto;
+}
+
+.tokenValue {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #60a5fa;
+  word-break: break-all;
+}
+
+.tokenActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  background: #0066cc;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn:hover:not(:disabled) {
+  background: #0052a3;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnDanger {
+  background: #ef4444;
+}
+
+.btnDanger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.btnSecondary {
+  padding: 10px 16px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: transparent;
+  color: #ccc;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnSecondary:hover {
+  background: #1a1a1a;
+}
+
+.error {
+  background: #4d1a1a;
+  border: 1px solid #7f1d1d;
+  color: #ef4444;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.success {
+  background: #052e16;
+  border: 1px solid #166534;
+  color: #4ade80;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.twoFAStatus {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.statusIndicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.statusDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #666;
+}
+
+.statusDot.enabled {
+  background: #4ade80;
+}
+
+.statusDot.disabled {
+  background: #ef4444;
+}
+
+.statusText {
+  font-size: 14px;
+  color: #ccc;
+  font-weight: 500;
+}
+
+.setupContainer {
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 4px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.qrSection {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #222;
+}
+
+.qrSection h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.qrImage {
+  background: #fff;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
+.qrImage img {
+  display: block;
+  width: 200px;
+  height: 200px;
+}
+
+.instruction {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+}
+
+.secretSection {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #222;
+}
+
+.secretSection h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.secretValue {
+  display: block;
+  background: #111;
+  border: 1px solid #222;
+  padding: 12px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #60a5fa;
+  word-break: break-all;
+}
+
+.verifySection h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.codeInput {
+  width: 100%;
+  padding: 12px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.codeInput:focus {
+  outline: none;
+  border-color: #0066cc;
+}
+
+.codeInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.setupActions {
+  display: flex;
+  gap: 8px;
+}
+
+.disableContainer {
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 4px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.disableContainer h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.disableContainer p {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 12px;
+}

@@ -11,6 +11,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminDeals from './pages/admin/AdminDeals';
 import AdminLogs from './pages/admin/AdminLogs';
 import DealsHistoryPage from './pages/deals/DealsHistoryPage';
+import SettingsPage from './pages/settings/SettingsPage';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
             <Route path="/payout" element={<PayoutPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/" element={<Navigate to="/payout" replace />} />
           </Route>
         </Route>

@@ -2,7 +2,7 @@ from decimal import Decimal
 from .base import Base, user_currencies_table
 from sqlalchemy import Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from .currency import Currency
@@ -19,6 +19,7 @@ class User(Base):
     balance: Mapped[Decimal] = mapped_column(Numeric(18, 2), server_default="0")
     is_active: Mapped[bool] = mapped_column(server_default="false")
     is_admin: Mapped[bool] = mapped_column(server_default="false")
+    totp_secret: Mapped[Optional[str]] = mapped_column(nullable=True)
 
     currencies: Mapped[List['Currency']] = relationship(
         secondary=user_currencies_table,
