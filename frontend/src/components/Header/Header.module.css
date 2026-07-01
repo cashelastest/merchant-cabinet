@@ -149,6 +149,22 @@
   border-color: #3a3a3a;
 }
 
+.settingsBtn {
+  padding: 5px 12px;
+  background-color: #1a3a4d;
+  border: 1px solid #264d66;
+  border-radius: 6px;
+  color: #60a5fa;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.settingsBtn:hover {
+  background-color: #1f4a5d;
+  color: #93c5fd;
+  border-color: #3a5a7a;
+}
+
 .logoutBtn {
   padding: 5px 10px;
   background-color: transparent;

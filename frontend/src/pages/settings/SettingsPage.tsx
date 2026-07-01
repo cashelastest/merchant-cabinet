@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const [twoFALoading, setTwoFALoading] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
+  const [showDisable, setShowDisable] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [totpSecret, setTotpSecret] = useState('');
   const [verifyCode, setVerifyCode] = useState('');
@@ -76,7 +77,10 @@ export default function SettingsPage() {
     setTwoFALoading(true);
     setTwoFAError(null);
     try {
-      await client.post('/auth/2fa/verify-setup', { code: verifyCode }).then((r) => r.data);
+      await client.post('/auth/2fa/verify-setup', {
+        code: verifyCode,
+        secret: totpSecret
+      }).then((r) => r.data);
       setIs2FAEnabled(true);
       setShowSetup(false);
       setVerifyCode('');
@@ -176,9 +180,9 @@ export default function SettingsPage() {
               </span>
             </div>
 
-            {!showSetup && (
+            {!showSetup && !showDisable && (
               <button
-                onClick={() => is2FAEnabled ? handleDisable2FA : handleEnable2FA}
+                onClick={() => is2FAEnabled ? setShowDisable(true) : handleEnable2FA()}
                 disabled={twoFALoading}
                 className={`${styles.btn} ${is2FAEnabled ? styles.btnDanger : ''}`}
               >
@@ -240,7 +244,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {showSetup && is2FAEnabled && (
+          {showDisable && (
             <div className={styles.disableContainer}>
               <h3>Отключить 2FA</h3>
               <p>Введите код из приложения аутентификации</p>
@@ -262,7 +266,11 @@ export default function SettingsPage() {
                   {twoFALoading ? 'Отключаю...' : 'Отключить'}
                 </button>
                 <button
-                  onClick={() => setShowSetup(false)}
+                  onClick={() => {
+                    setShowDisable(false);
+                    setVerifyCode('');
+                    setTwoFAError(null);
+                  }}
                   className={styles.btnSecondary}
                 >
                   Отмена

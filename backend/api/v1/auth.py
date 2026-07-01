@@ -28,6 +28,11 @@ class TwoFAVerify(BaseModel):
     code: str
 
 
+class TwoFASetupVerify(BaseModel):
+    code: str
+    secret: str
+
+
 class UserSettings(BaseModel):
     api_key: str
     is_2fa_enabled: bool
@@ -155,22 +160,21 @@ async def setup_2fa(user: User = Depends(get_current_user)):
 
 @router.post("/2fa/verify-setup")
 async def verify_2fa_setup(
-    data: TwoFAVerify,
+    data: TwoFASetupVerify,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     if user.totp_secret:
         raise HTTPException(status_code=400, detail="2FA already enabled")
 
-    secret = data.code[:32] if len(data.code) > 6 else None
-    if not secret:
+    if not data.secret or not data.code:
         raise HTTPException(status_code=400, detail="Invalid setup")
 
-    totp = pyotp.TOTP(secret)
-    if not totp.verify(data.code[-6:]):
+    totp = pyotp.TOTP(data.secret)
+    if not totp.verify(data.code):
         raise HTTPException(status_code=400, detail="Invalid code")
 
-    user.totp_secret = secret
+    user.totp_secret = data.secret
     await session.commit()
     return {"status": "2fa_enabled"}
 

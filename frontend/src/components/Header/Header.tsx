@@ -121,7 +121,7 @@ export default function Header() {
             </>
           )}
           <button className={styles.refreshBtn} onClick={handleRefresh}>↻ Refresh</button>
-          <button className={styles.refreshBtn} onClick={() => navigate('/settings')} title="Settings">⚙</button>
+          <button className={styles.settingsBtn} onClick={() => navigate('/settings')} title="Settings">⚙ Settings</button>
           <button className={styles.logoutBtn} onClick={logout} title="Logout">⎋</button>
         </div>
       </div>
