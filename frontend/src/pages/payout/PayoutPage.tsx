@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import client from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import CountdownTimer from '../../components/CountdownTimer/CountdownTimer';
 import styles from './PayoutPage.module.css';
 
@@ -33,6 +34,7 @@ interface Payout {
 
 export default function PayoutPage() {
   const { t } = useTranslation();
+  const { refreshUser } = useAuth();
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingReceipt, setUploadingReceipt] = useState<Record<number, boolean>>({});
@@ -95,8 +97,12 @@ export default function PayoutPage() {
 
   const handleStatusChange = async (payoutId: number, newStatus: string) => {
     try {
-      const response = await client.patch(`/payout/${payoutId}/status?status=${newStatus}`);
+      await client.patch(`/payout/${payoutId}/status?status=${newStatus}`);
       setPayouts((prev) => prev.map((p) => p.id === payoutId ? { ...p, status: newStatus } : p));
+
+      if (newStatus === 'completed') {
+        await refreshUser();
+      }
     } catch {
       alert('Failed to update status');
     }

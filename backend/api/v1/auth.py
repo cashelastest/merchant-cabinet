@@ -40,26 +40,10 @@ async def me(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    balance = 0.0
-    try:
-        data = await BizonService.get_wallets_balance(user.api_key, user.secret)
-        wallets = data.get("wallets", [])
-        wallet = wallets[-1] if wallets else {}
-        balance = float(wallet.get("balance", 0))
-        log = ApiKeyLog(
-            username=user.username,
-            used_at=datetime.utcnow(),
-            purpose="get_balance",
-            key_type="user",
-        )
-        session.add(log)
-        await session.commit()
-    except Exception:
-        pass
     return {
         "id": user.id,
         "username": user.username,
-        "balance": balance,
+        "balance": float(user.balance),
         "is_active": user.is_active,
         "currencies": [c.xml for c in user.currencies],
     }
