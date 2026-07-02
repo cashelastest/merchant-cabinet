@@ -28,6 +28,12 @@ class UserRepository(BaseRepository[User]):
         )
         return result.scalar_one_or_none()
 
+    async def get_by_api_key(self, api_key: str) -> User | None:
+        result = await self.session.execute(
+            select(User).where(User.api_key == api_key).options(selectinload(User.currencies))
+        )
+        return result.scalar_one_or_none()
+
     async def set_currencies(self, user: User, xml_codes: list[str]) -> User:
         currencies = []
         for xml in xml_codes:

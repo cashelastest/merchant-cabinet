@@ -6,7 +6,7 @@ import json
 import aiofiles
 from pathlib import Path
 
-from core.dependencies import get_current_user, get_session, _decode_token, SessionLocal
+from core.dependencies import get_current_user, get_session, _decode_token, SessionLocal, get_current_user_or_by_api_key
 from models import User, BalanceHistory
 from repositories.payout import PayoutRepository
 from repositories.user import UserRepository
@@ -46,7 +46,7 @@ payout_manager = PayoutConnectionManager()
 @router.post("/", response_model=PayoutResponse)
 async def request_payout(
     data: PayoutRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user_or_by_api_key),
     session: AsyncSession = Depends(get_session),
 ):
     repo = PayoutRepository(session)

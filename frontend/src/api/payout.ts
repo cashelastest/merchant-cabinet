@@ -1,4 +1,5 @@
 import client from './client';
+import apiKeyClient from './apiKeyClient';
 
 export interface PayoutResponse {
   id: number;
@@ -25,7 +26,7 @@ export interface PayoutRequest {
 }
 
 export const requestPayout = (data: PayoutRequest) =>
-  client.post<PayoutResponse>('/payout/', data).then((r) => r.data);
+  apiKeyClient.post<PayoutResponse>('/payout/', data).then((r) => r.data);
 
 export const getPayouts = () =>
   client.get<PayoutResponse[]>('/payout/').then((r) => r.data);

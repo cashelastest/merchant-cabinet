@@ -22,8 +22,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const u = await getMe();
       setUser(u);
+
+      // Load and store API key
+      const client = (await import('../api/client')).default;
+      try {
+        const settings = await client.get('/auth/user-settings').then((r) => r.data);
+        if (settings.api_key) {
+          localStorage.setItem('merchantApiKey', settings.api_key);
+        }
+      } catch {
+        // API key loading failed, but user is logged in
+      }
     } catch {
       localStorage.removeItem('merchantToken');
+      localStorage.removeItem('merchantApiKey');
       setToken(null);
       setUser(null);
     }
@@ -46,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('merchantToken');
+    localStorage.removeItem('merchantApiKey');
     setToken(null);
     setUser(null);
   };

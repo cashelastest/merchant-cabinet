@@ -27,6 +27,9 @@ export default function SettingsPage() {
     try {
       const data = await client.get('/auth/user-settings').then((r) => r.data);
       setApiKey(data.api_key || '');
+      if (data.api_key) {
+        localStorage.setItem('merchantApiKey', data.api_key);
+      }
       setIs2FAEnabled(data.is_2fa_enabled || false);
     } catch {
       console.error('Failed to load settings');
@@ -40,6 +43,7 @@ export default function SettingsPage() {
     try {
       const data = await client.post('/auth/generate-api-key', {}).then((r) => r.data);
       setApiKey(data.api_key);
+      localStorage.setItem('merchantApiKey', data.api_key);
       alert('API key generated successfully!');
     } catch {
       alert('Failed to generate API key');
