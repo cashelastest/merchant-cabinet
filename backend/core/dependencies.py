@@ -69,18 +69,14 @@ async def get_current_user_ws(
 
 
 async def get_user_by_api_key(
-    authorization: str = Header(default=None),
+    x_api_key: str = Header(default=None),
     session: AsyncSession = Depends(get_session),
 ) -> User:
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing authorization header")
-
-    api_key = authorization.removeprefix("Bearer ").removeprefix("ApiKey ")
-    if not api_key:
-        raise HTTPException(status_code=401, detail="Invalid authorization format")
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="Missing X-API-Key header")
 
     repo = UserRepository(session)
-    user = await repo.get_by_api_key(api_key)
+    user = await repo.get_by_api_key(x_api_key)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return user
@@ -88,16 +84,19 @@ async def get_user_by_api_key(
 
 async def get_current_user_or_by_api_key(
     authorization: str = Header(default=None),
+    x_api_key: str = Header(default=None),
     session: AsyncSession = Depends(get_session),
 ) -> User:
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing authorization header")
-
-    auth_value = authorization.removeprefix("Bearer ").removeprefix("ApiKey ")
-    if not auth_value:
-        raise HTTPException(status_code=401, detail="Invalid authorization format")
-
     repo = UserRepository(session)
+
+    if x_api_key:
+        user = await repo.get_by_api_key(x_api_key)
+        if user:
+            return user
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authorization or X-API-Key header")
 
     try:
         user_id = _decode_token(authorization)
@@ -106,9 +105,5 @@ async def get_current_user_or_by_api_key(
             return user
     except HTTPException:
         pass
-
-    user = await repo.get_by_api_key(auth_value)
-    if user:
-        return user
 
     raise HTTPException(status_code=401, detail="Invalid credentials")
