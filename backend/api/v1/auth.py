@@ -154,7 +154,7 @@ async def setup_2fa(user: User = Depends(get_current_user)):
     secret = pyotp.random_base32()
     totp = pyotp.TOTP(secret)
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
-    qr.add_data(totp.provisioning_uri(name=user.username, issuer_name="BPay Merchant Cabinet"))
+    qr.add_data(totp.provisioning_uri(name=user.username, issuer_name="BPay-Merchant-Cabinet"))
     qr.make(fit=True)
 
     img = qr.make_image(fill_color="black", back_color="white")

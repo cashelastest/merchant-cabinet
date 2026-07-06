@@ -12,11 +12,15 @@ import AdminPayouts from './pages/admin/AdminPayouts';
 import AdminLogs from './pages/admin/AdminLogs';
 import DealsHistoryPage from './pages/deals/DealsHistoryPage';
 import SettingsPage from './pages/settings/SettingsPage';
+import DocsPage from './pages/DocsPage';
 
 export default function App() {
   return (
     <AuthProvider>
       <Routes>
+        {/* Public routes */}
+        <Route path="/docs" element={<DocsPage />} />
+
         {/* Merchant routes */}
         <Route element={<AuthLayout />}>
           <Route path="/auth/login" element={<LoginPage />} />
