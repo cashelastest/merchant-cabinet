@@ -78,7 +78,6 @@ class BizonService:
         secret: str,
         route_id: str,
         amount: Decimal,
-        wallet_address: str,
     ) -> dict:
         api = ExchangerAPI(
             api_url=BIZON_PUBLIC_URL,
@@ -89,7 +88,7 @@ class BizonService:
             "post": {
                 "routeId": route_id,
                 "amount": str(amount),
-                "toValues": [{"key": "walletAddress", "value": wallet_address}],
+                "toValues": [],
                 "agreement": True,
                 "skipPreview": True,
                 "typeClient": "api",

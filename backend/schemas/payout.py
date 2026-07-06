@@ -6,7 +6,6 @@ from typing import Optional
 
 class PayoutRequest(BaseModel):
     amount: Decimal
-    wallet_address: str
     currency: str = "USDT"
     card_holder: Optional[str] = None
     card_number: Optional[str] = None
@@ -24,7 +23,6 @@ class PayoutRequest(BaseModel):
 class PayoutResponse(BaseModel):
     id: int
     amount: float
-    wallet_address: str
     currency: str = "USDT"
     card_holder: Optional[str] = None
     card_number: Optional[str] = None

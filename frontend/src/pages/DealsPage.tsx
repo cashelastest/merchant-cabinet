@@ -81,7 +81,6 @@ export default function DealsPage({ onLogout }: Props) {
     try {
       await requestPayout({
         amount,
-        wallet_address: payoutWallet.trim(),
         currency: 'USDT',
         card_holder: cardHolder || undefined,
         card_number: cardNumber || undefined,

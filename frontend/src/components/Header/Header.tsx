@@ -60,7 +60,7 @@ export default function Header() {
     if (amount > (user?.balance ?? 0)) { setPayoutError('Insufficient balance'); return; }
     setPayoutLoading(true);
     try {
-      const result = await requestPayout({ amount, wallet_address: payoutWallet.trim() });
+      const result = await requestPayout({ amount });
       setShowPayout(false);
       setPayoutAmount('');
       setPayoutWallet('');

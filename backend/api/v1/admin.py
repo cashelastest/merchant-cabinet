@@ -355,7 +355,6 @@ async def list_payouts_admin(
             "id": payout.id,
             "user_id": payout.user_id,
             "amount": float(payout.amount),
-            "wallet_address": payout.wallet_address,
             "currency": payout.currency,
             "card_holder": payout.card_holder,
             "card_number": payout.card_number,

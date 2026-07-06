@@ -13,7 +13,6 @@ class Payout(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     deal_id: Mapped[Optional[int]] = mapped_column(ForeignKey("deal.id"), nullable=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(18, 2))
-    wallet_address: Mapped[str]
     currency: Mapped[str] = mapped_column(server_default="USDT")
     card_holder: Mapped[Optional[str]] = mapped_column(nullable=True)
     card_number: Mapped[Optional[str]] = mapped_column(nullable=True)

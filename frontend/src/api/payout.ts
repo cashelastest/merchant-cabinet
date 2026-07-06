@@ -4,7 +4,6 @@ import apiKeyClient from './apiKeyClient';
 export interface PayoutResponse {
   id: number;
   amount: number;
-  wallet_address: string;
   currency?: string;
   card_holder?: string;
   card_number?: string;
@@ -17,7 +16,6 @@ export interface PayoutResponse {
 
 export interface PayoutRequest {
   amount: number;
-  wallet_address: string;
   currency?: string;
   card_holder?: string;
   card_number?: string;

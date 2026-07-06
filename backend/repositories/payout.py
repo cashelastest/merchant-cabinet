@@ -11,7 +11,6 @@ class PayoutRepository(BaseRepository[Payout]):
         self,
         user_id: int,
         amount: Decimal,
-        wallet_address: str,
         currency: str = "USDT",
         card_holder: str = None,
         card_number: str = None,
@@ -21,7 +20,6 @@ class PayoutRepository(BaseRepository[Payout]):
         payout = Payout(
             user_id=user_id,
             amount=amount,
-            wallet_address=wallet_address,
             currency=currency,
             card_holder=card_holder,
             card_number=card_number,

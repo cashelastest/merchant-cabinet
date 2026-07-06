@@ -53,7 +53,6 @@ async def request_payout(
     payout = await repo.create(
         user.id,
         data.amount,
-        data.wallet_address,
         data.currency,
         data.card_holder,
         data.card_number,
@@ -66,7 +65,6 @@ async def request_payout(
     return PayoutResponse(
         id=payout.id,
         amount=float(payout.amount),
-        wallet_address=payout.wallet_address,
         currency=payout.currency,
         card_holder=payout.card_holder,
         card_number=payout.card_number,
@@ -89,7 +87,6 @@ async def list_payouts(
         PayoutResponse(
             id=p.id,
             amount=float(p.amount),
-            wallet_address=p.wallet_address,
             currency=p.currency,
             card_holder=p.card_holder,
             card_number=p.card_number,
@@ -156,7 +153,6 @@ async def update_payout_status(
     return PayoutResponse(
         id=payout.id,
         amount=float(payout.amount),
-        wallet_address=payout.wallet_address,
         currency=payout.currency,
         card_holder=payout.card_holder,
         card_number=payout.card_number,

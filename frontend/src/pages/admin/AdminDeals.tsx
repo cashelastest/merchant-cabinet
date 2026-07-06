@@ -9,7 +9,6 @@ interface AdminPayout {
   id: number;
   user_id: number;
   amount: number;
-  wallet_address: string;
   currency: string;
   card_holder: string | null;
   card_number: string | null;

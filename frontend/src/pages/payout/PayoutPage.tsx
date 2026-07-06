@@ -20,7 +20,6 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 interface Payout {
   id: number;
   amount: number;
-  wallet_address: string;
   currency: string;
   card_holder?: string;
   card_number?: string;
