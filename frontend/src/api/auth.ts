@@ -13,3 +13,8 @@ export const getMe = () =>
 export const setMyStatus = (is_active: boolean) =>
   client.patch<{ id: number; username: string; is_active: boolean }>('/auth/me/status', { is_active }).then((r) => r.data);
 
+export const verify2FA = (code: string, tempToken: string) =>
+  client.post<TokenResponse>('/auth/2fa/verify-login', { code }, {
+    headers: { Authorization: `Bearer ${tempToken}` }
+  }).then((r) => r.data);
+

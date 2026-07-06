@@ -46,12 +46,21 @@ def _create_token(user_id: int) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 async def login(data: LoginRequest, service: UserService = Depends(get_user_service)):
     user = await service.authenticate(data.username, data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return TokenResponse(access_token=_create_token(user.id))
+
+    if user.totp_secret:
+        temp_token = jwt.encode(
+            {"sub": str(user.id), "exp": datetime.now(UTC) + timedelta(minutes=5), "2fa_pending": True},
+            SECRET_KEY,
+            algorithm="HS256"
+        )
+        return {"access_token": temp_token, "requires_2fa": True}
+
+    return {"access_token": _create_token(user.id), "requires_2fa": False}
 
 
 @router.get("/me")
@@ -145,7 +154,7 @@ async def setup_2fa(user: User = Depends(get_current_user)):
     secret = pyotp.random_base32()
     totp = pyotp.TOTP(secret)
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
-    qr.add_data(totp.provisioning_uri(name=user.username, issuer_name="Merchant Cabinet"))
+    qr.add_data(totp.provisioning_uri(name=user.username, issuer_name="BPay Merchant Cabinet"))
     qr.make(fit=True)
 
     img = qr.make_image(fill_color="black", back_color="white")
@@ -195,3 +204,20 @@ async def disable_2fa(
     user.totp_secret = None
     await session.commit()
     return {"status": "2fa_disabled"}
+
+
+@router.post("/2fa/verify-login")
+async def verify_2fa_login(
+    data: TwoFAVerify,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not user.totp_secret:
+        raise HTTPException(status_code=400, detail="2FA not enabled")
+
+    totp = pyotp.TOTP(user.totp_secret)
+    if not totp.verify(data.code):
+        raise HTTPException(status_code=401, detail="Invalid 2FA code")
+
+    access_token = _create_token(user.id)
+    return {"access_token": access_token}

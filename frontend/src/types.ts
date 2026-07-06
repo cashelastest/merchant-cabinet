@@ -36,7 +36,8 @@ export interface Deal {
 
 export interface TokenResponse {
   access_token: string;
-  token_type: string;
+  token_type?: string;
+  requires_2fa?: boolean;
 }
 
 export interface WsDealMessage {
