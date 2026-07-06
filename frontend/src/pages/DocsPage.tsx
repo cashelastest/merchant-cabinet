@@ -30,10 +30,10 @@ export default function DocsPage() {
         <section>
           <h2>Authentication</h2>
           <p>
-            This endpoint requires authentication using a Bearer token. Include your authentication token in the Authorization header:
+            This endpoint requires authentication using your API Key. Include your API Key in the X-API-Key header:
           </p>
           <div className={styles.codeBlock}>
-            <code>Authorization: Bearer {'{your_access_token}'}</code>
+            <code>X-API-Key: {'{your_api_key}'}</code>
           </div>
         </section>
 
@@ -41,16 +41,23 @@ export default function DocsPage() {
           <h2>Request Body</h2>
           <div className={styles.codeBlock}>
             <pre>{`{
+  "uid": number,
+  "secret": "string",
   "from_xml": "string",
+  "from_name": "string",
+  "from_image_url": "string",
   "to_xml": "string",
+  "to_name": "string",
+  "to_image_xml": "string",
+  "status": "string",
+  "created_at": "2026-07-06T10:30:00Z",
   "to_values": {
     "outAmount": number,
     "cardHolder": "string",
     "cardNumber": "string",
     "phoneNumber": "string",
     "bankName": "string",
-    "country": "string",
-    "usdtWallet": "string"
+    "country": "string"
   }
 }`}</pre>
           </div>
@@ -67,16 +74,64 @@ export default function DocsPage() {
             </thead>
             <tbody>
               <tr>
+                <td>uid</td>
+                <td>number</td>
+                <td>Yes</td>
+                <td>Unique identifier for the deal</td>
+              </tr>
+              <tr>
+                <td>secret</td>
+                <td>string</td>
+                <td>Yes</td>
+                <td>Secret token for verification</td>
+              </tr>
+              <tr>
                 <td>from_xml</td>
                 <td>string</td>
                 <td>Yes</td>
                 <td>Source currency/method code (e.g., "USDT")</td>
               </tr>
               <tr>
+                <td>from_name</td>
+                <td>string</td>
+                <td>Yes</td>
+                <td>Display name of the source currency</td>
+              </tr>
+              <tr>
+                <td>from_image_url</td>
+                <td>string</td>
+                <td>Yes</td>
+                <td>URL to the source currency icon</td>
+              </tr>
+              <tr>
                 <td>to_xml</td>
                 <td>string</td>
                 <td>Yes</td>
                 <td>Destination currency/method code</td>
+              </tr>
+              <tr>
+                <td>to_name</td>
+                <td>string</td>
+                <td>Yes</td>
+                <td>Display name of the destination currency</td>
+              </tr>
+              <tr>
+                <td>to_image_xml</td>
+                <td>string</td>
+                <td>Yes</td>
+                <td>URL to the destination currency icon</td>
+              </tr>
+              <tr>
+                <td>status</td>
+                <td>string</td>
+                <td>Yes</td>
+                <td>Initial status of the deal (typically "pending")</td>
+              </tr>
+              <tr>
+                <td>created_at</td>
+                <td>string (ISO 8601)</td>
+                <td>Yes</td>
+                <td>Creation timestamp in ISO 8601 format</td>
               </tr>
               <tr>
                 <td>to_values</td>
@@ -134,12 +189,6 @@ export default function DocsPage() {
                 <td>No</td>
                 <td>Country code or name</td>
               </tr>
-              <tr>
-                <td>usdtWallet</td>
-                <td>string</td>
-                <td>No</td>
-                <td>USDT wallet address (TRC20)</td>
-              </tr>
             </tbody>
           </table>
         </section>
@@ -147,12 +196,20 @@ export default function DocsPage() {
         <section>
           <h2>Example Request</h2>
           <div className={styles.codeBlock}>
-            <pre>{`curl -X POST https://merchant.bpay-processing.com/api/v1/deals \\
-  -H "Authorization: Bearer YOUR_TOKEN" \\
+            <pre>{`curl -X POST https://merchant.bpay-processing.com/api/v1/deal/ \\
+  -H "X-API-Key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d {
+  -d '{
+  "uid": 12345,
+  "secret": "your-secret-key",
   "from_xml": "USDT",
+  "from_name": "USDT Tether",
+  "from_image_url": "https://...",
   "to_xml": "UAH",
+  "to_name": "Ukrainian Hryvnia",
+  "to_image_xml": "https://...",
+  "status": "pending",
+  "created_at": "2026-07-06T10:30:00Z",
   "to_values": {
     "outAmount": 100.50,
     "cardHolder": "John Doe",
@@ -161,34 +218,16 @@ export default function DocsPage() {
     "bankName": "PrivatBank",
     "country": "UA"
   }
-}`}</pre>
+}'`}</pre>
           </div>
         </section>
 
         <section>
           <h2>Response</h2>
-          <p>On success, the API returns a 201 Created status with the created deal details:</p>
+          <p>On success, the API returns a 200 OK status with the deal ID:</p>
           <div className={styles.codeBlock}>
             <pre>{`{
-  "id": 123,
-  "uid": "unique-deal-id",
-  "from_xml": "USDT",
-  "to_xml": "UAH",
-  "from_name": "USDT Tether",
-  "to_name": "Ukrainian Hryvnia",
-  "to_values": {
-    "outAmount": 100.50,
-    "cardHolder": "John Doe",
-    "cardNumber": "1234",
-    "phoneNumber": "+380991234567",
-    "bankName": "PrivatBank",
-    "country": "UA"
-  },
-  "status": "pending",
-  "created_at": "2026-07-06T10:30:00Z",
-  "accepted_by": null,
-  "accepted_at": null,
-  "received_at": null
+  "id": 123
 }`}</pre>
           </div>
         </section>
@@ -204,7 +243,7 @@ export default function DocsPage() {
             </thead>
             <tbody>
               <tr>
-                <td>201</td>
+                <td>200</td>
                 <td>Deal created successfully</td>
               </tr>
               <tr>
@@ -213,7 +252,7 @@ export default function DocsPage() {
               </tr>
               <tr>
                 <td>401</td>
-                <td>Unauthorized (missing or invalid token)</td>
+                <td>Unauthorized (missing or invalid API key)</td>
               </tr>
               <tr>
                 <td>422</td>

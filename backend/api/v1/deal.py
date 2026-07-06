@@ -6,7 +6,7 @@ import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.ws_manager import manager
-from core.dependencies import get_current_user, get_deal_service, redis_service, get_session, _decode_token, SessionLocal
+from core.dependencies import get_current_user, get_deal_service, redis_service, get_session, _decode_token, SessionLocal, get_user_by_api_key
 from services.deal import DealService
 from models import User, BalanceHistory
 from schemas import DealCreateRequest, DealResponse
@@ -45,6 +45,7 @@ async def list_deals(
 async def create_deal(
     data: DealCreateRequest,
     service: DealService = Depends(get_deal_service),
+    user: User = Depends(get_user_by_api_key),
 ):
     deal = await service.create(data)
 
