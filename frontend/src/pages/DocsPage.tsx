@@ -11,19 +11,19 @@ export default function DocsPage() {
       </div>
 
       <article className={styles.article}>
-        <h1>Creating a Deal</h1>
+        <h1>Creating a Payout Request</h1>
 
         <section>
           <h2>Overview</h2>
           <p>
-            A deal represents a transaction request in the BPay Merchant Cabinet system. This endpoint allows you to create new deals that will be processed according to your business rules.
+            A payout request represents a withdrawal transaction in the BPay Merchant Cabinet system. This endpoint allows you to create new payout requests with recipient bank details.
           </p>
         </section>
 
         <section>
           <h2>Endpoint</h2>
           <div className={styles.codeBlock}>
-            <code>POST /api/v1/deals</code>
+            <code>POST /api/v1/payout/</code>
           </div>
         </section>
 
@@ -41,24 +41,12 @@ export default function DocsPage() {
           <h2>Request Body</h2>
           <div className={styles.codeBlock}>
             <pre>{`{
-  "uid": number,
-  "secret": "string",
-  "from_xml": "string",
-  "from_name": "string",
-  "from_image_url": "string",
-  "to_xml": "string",
-  "to_name": "string",
-  "to_image_xml": "string",
-  "status": "string",
-  "created_at": "2026-07-06T10:30:00Z",
-  "to_values": {
-    "outAmount": number,
-    "cardHolder": "string",
-    "cardNumber": "string",
-    "phoneNumber": "string",
-    "bankName": "string",
-    "country": "string"
-  }
+  "amount": 150.00,
+  "currency": "USD",
+  "card_holder": "Test User",
+  "card_number": "5555555555554444",
+  "phone_number": "+1234567890",
+  "bank_name": "Test Bank"
 }`}</pre>
           </div>
 
@@ -74,120 +62,40 @@ export default function DocsPage() {
             </thead>
             <tbody>
               <tr>
-                <td>uid</td>
-                <td>number</td>
+                <td>amount</td>
+                <td>decimal</td>
                 <td>Yes</td>
-                <td>Unique identifier for the deal</td>
+                <td>Amount to withdraw (must be positive)</td>
               </tr>
               <tr>
-                <td>secret</td>
+                <td>currency</td>
                 <td>string</td>
                 <td>Yes</td>
-                <td>Secret token for verification</td>
+                <td>Currency code (e.g., "USD", "USDT", "EUR")</td>
               </tr>
               <tr>
-                <td>from_xml</td>
-                <td>string</td>
-                <td>Yes</td>
-                <td>Source currency/method code (e.g., "USDT")</td>
-              </tr>
-              <tr>
-                <td>from_name</td>
-                <td>string</td>
-                <td>Yes</td>
-                <td>Display name of the source currency</td>
-              </tr>
-              <tr>
-                <td>from_image_url</td>
-                <td>string</td>
-                <td>Yes</td>
-                <td>URL to the source currency icon</td>
-              </tr>
-              <tr>
-                <td>to_xml</td>
-                <td>string</td>
-                <td>Yes</td>
-                <td>Destination currency/method code</td>
-              </tr>
-              <tr>
-                <td>to_name</td>
-                <td>string</td>
-                <td>Yes</td>
-                <td>Display name of the destination currency</td>
-              </tr>
-              <tr>
-                <td>to_image_xml</td>
-                <td>string</td>
-                <td>Yes</td>
-                <td>URL to the destination currency icon</td>
-              </tr>
-              <tr>
-                <td>status</td>
-                <td>string</td>
-                <td>Yes</td>
-                <td>Initial status of the deal (typically "pending")</td>
-              </tr>
-              <tr>
-                <td>created_at</td>
-                <td>string (ISO 8601)</td>
-                <td>Yes</td>
-                <td>Creation timestamp in ISO 8601 format</td>
-              </tr>
-              <tr>
-                <td>to_values</td>
-                <td>object</td>
-                <td>Yes</td>
-                <td>Transaction details (see table below)</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <h3>to_values Parameters</h3>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Required</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>outAmount</td>
-                <td>number</td>
-                <td>Yes</td>
-                <td>Amount to be transferred</td>
-              </tr>
-              <tr>
-                <td>cardHolder</td>
+                <td>card_holder</td>
                 <td>string</td>
                 <td>No</td>
                 <td>Name of the card holder</td>
               </tr>
               <tr>
-                <td>cardNumber</td>
+                <td>card_number</td>
                 <td>string</td>
                 <td>No</td>
-                <td>Card number (last 4 digits typically)</td>
+                <td>Bank card number</td>
               </tr>
               <tr>
-                <td>phoneNumber</td>
+                <td>phone_number</td>
                 <td>string</td>
                 <td>No</td>
                 <td>Recipient's phone number</td>
               </tr>
               <tr>
-                <td>bankName</td>
+                <td>bank_name</td>
                 <td>string</td>
                 <td>No</td>
-                <td>Name of the bank</td>
-              </tr>
-              <tr>
-                <td>country</td>
-                <td>string</td>
-                <td>No</td>
-                <td>Country code or name</td>
+                <td>Name of the recipient's bank</td>
               </tr>
             </tbody>
           </table>
@@ -196,38 +104,36 @@ export default function DocsPage() {
         <section>
           <h2>Example Request</h2>
           <div className={styles.codeBlock}>
-            <pre>{`curl -X POST https://merchant.bpay-processing.com/api/v1/deal/ \\
+            <pre>{`curl -X POST https://merchant.bpay-processing.com/api/v1/payout/ \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-  "uid": 12345,
-  "secret": "your-secret-key",
-  "from_xml": "USDT",
-  "from_name": "USDT Tether",
-  "from_image_url": "https://...",
-  "to_xml": "UAH",
-  "to_name": "Ukrainian Hryvnia",
-  "to_image_xml": "https://...",
-  "status": "pending",
-  "created_at": "2026-07-06T10:30:00Z",
-  "to_values": {
-    "outAmount": 100.50,
-    "cardHolder": "John Doe",
-    "cardNumber": "1234",
-    "phoneNumber": "+380991234567",
-    "bankName": "PrivatBank",
-    "country": "UA"
-  }
+  "amount": 150.00,
+  "currency": "USD",
+  "card_holder": "Test User",
+  "card_number": "5555555555554444",
+  "phone_number": "+1234567890",
+  "bank_name": "Test Bank"
 }'`}</pre>
           </div>
         </section>
 
         <section>
           <h2>Response</h2>
-          <p>On success, the API returns a 200 OK status with the deal ID:</p>
+          <p>On success, the API returns a 200 OK status with the created payout details:</p>
           <div className={styles.codeBlock}>
             <pre>{`{
-  "id": 123
+  "id": 42,
+  "amount": 150.0,
+  "currency": "USD",
+  "card_holder": "Test User",
+  "card_number": "5555555555554444",
+  "phone_number": "+1234567890",
+  "bank_name": "Test Bank",
+  "receipt_url": null,
+  "status": "pending",
+  "created_at": "2026-07-06T10:30:00Z",
+  "redirect_url": ""
 }`}</pre>
           </div>
         </section>
@@ -244,11 +150,11 @@ export default function DocsPage() {
             <tbody>
               <tr>
                 <td>200</td>
-                <td>Deal created successfully</td>
+                <td>Payout created successfully</td>
               </tr>
               <tr>
                 <td>400</td>
-                <td>Invalid request parameters</td>
+                <td>Invalid request parameters (e.g., negative amount)</td>
               </tr>
               <tr>
                 <td>401</td>
@@ -257,6 +163,40 @@ export default function DocsPage() {
               <tr>
                 <td>422</td>
                 <td>Validation error</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>Payout Statuses</h2>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>pending</td>
+                <td>Payout request created, awaiting processing</td>
+              </tr>
+              <tr>
+                <td>processing</td>
+                <td>Payout is being processed</td>
+              </tr>
+              <tr>
+                <td>completed</td>
+                <td>Payout has been successfully completed</td>
+              </tr>
+              <tr>
+                <td>failed</td>
+                <td>Payout processing failed</td>
+              </tr>
+              <tr>
+                <td>cancelled</td>
+                <td>Payout was cancelled</td>
               </tr>
             </tbody>
           </table>
