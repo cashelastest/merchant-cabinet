@@ -198,7 +198,10 @@ export default function AdminUsers() {
                         autoFocus
                       />
                     ) : (
-                      <span onClick={() => handleEditClick(u)} style={{ cursor: 'pointer', color: '#60a5fa' }}>
+                      <span
+                        onClick={() => navigate(`/admin/deals/${u.id}`)}
+                        style={{ cursor: 'pointer', color: '#60a5fa', textDecoration: 'underline' }}
+                      >
                         {u.username}
                       </span>
                     )}
