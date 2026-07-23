@@ -6,7 +6,7 @@ from typing import Optional
 
 class PayoutRequest(BaseModel):
     amount: Decimal
-    currency: str = "USDT"
+    currency: str
     card_holder: Optional[str] = None
     card_number: Optional[str] = None
     phone_number: Optional[str] = None

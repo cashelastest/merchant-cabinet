@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getDeals } from '../../api/deals';
+import { getDeals, acceptDeal, refuseDeal, completeDeal } from '../../api/deals';
 import type { Deal } from '../../types';
 import CountdownTimer from '../../components/CountdownTimer/CountdownTimer';
 import styles from './DealsPage.module.css';
@@ -21,6 +21,7 @@ export default function DealsPage() {
   const { t } = useTranslation();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actioningId, setActioningId] = useState<number | null>(null);
 
   // filters
   const [filterId, setFilterId] = useState('');
@@ -133,6 +134,42 @@ export default function DealsPage() {
     fetchDeals();
   };
 
+  const handleAccept = async (dealId: number) => {
+    setActioningId(dealId);
+    try {
+      const res = await acceptDeal(dealId);
+      setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, status: res.status } : d));
+    } catch {
+      alert('Failed to accept deal');
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleRefuse = async (dealId: number) => {
+    setActioningId(dealId);
+    try {
+      const res = await refuseDeal(dealId);
+      setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, status: res.status } : d));
+    } catch {
+      alert('Failed to refuse deal');
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleComplete = async (dealId: number) => {
+    setActioningId(dealId);
+    try {
+      const res = await completeDeal(dealId);
+      setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, status: res.status } : d));
+    } catch {
+      alert('Failed to complete deal');
+    } finally {
+      setActioningId(null);
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.breadcrumb}>{t('deals.breadcrumb')}</div>
@@ -214,21 +251,17 @@ export default function DealsPage() {
                       <>
                         <button
                           className={styles.btnAccept}
-                          onClick={() => {
-                            setDeals((prev) => prev.map((d) => d.id === deal.id ? { ...d, status: 'in_progress' } : d));
-                          }}
-                          disabled={false}
-                          title="Accept"
+                          onClick={() => handleAccept(deal.id)}
+                          disabled={actioningId === deal.id}
+                          title={t('deals.buttons.accept')}
                         >
                           ✓
                         </button>
                         <button
                           className={styles.btnRefuse}
-                          onClick={() => {
-                            setDeals((prev) => prev.map((d) => d.id === deal.id ? { ...d, status: 'refused' } : d));
-                          }}
-                          disabled={false}
-                          title="Refuse"
+                          onClick={() => handleRefuse(deal.id)}
+                          disabled={actioningId === deal.id}
+                          title={t('deals.buttons.refuse')}
                         >
                           ✕
                         </button>
@@ -238,11 +271,9 @@ export default function DealsPage() {
                       <>
                         <button
                           className={styles.btnComplete}
-                          onClick={() => {
-                            setDeals((prev) => prev.map((d) => d.id === deal.id ? { ...d, status: 'accepted' } : d));
-                          }}
-                          disabled={false}
-                          title="Complete"
+                          onClick={() => handleComplete(deal.id)}
+                          disabled={actioningId === deal.id}
+                          title={t('deals.buttons.complete')}
                         >
                           ✓
                         </button>
