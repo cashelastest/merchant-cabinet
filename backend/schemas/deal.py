@@ -18,6 +18,7 @@ class DealCreateRequest(BaseModel):
     to_image_xml: str
     status: str
     created_at: datetime
+    user_id: Optional[int] = None
 
 
 class DealPublish(DealCreateRequest):
@@ -28,6 +29,7 @@ class DealPublish(DealCreateRequest):
 class DealResponse(BaseModel):
     id: int
     uid: int
+    user_id: int
     bizon_id: Optional[str] = None
     secret: str
     to_values: Dict
