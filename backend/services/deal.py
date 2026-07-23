@@ -42,8 +42,7 @@ class DealService(BaseService):
         status: Optional[str] = None,
         from_xml: Optional[str] = None,
     ) -> list[Deal]:
-        user_xml_codes = {c.xml for c in user.currencies} if user.currencies else None
-        return await self.repository.get_all(deal_id, status, from_xml, user_xml_codes)
+        return await self.repository.get_all(deal_id, status, from_xml, user.id)
 
     async def accept(self, deal_id: int, user_id: int) -> Deal:
         deal = await self.repository.get_by_id(deal_id)

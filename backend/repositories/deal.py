@@ -15,7 +15,7 @@ class DealRepository(BaseRepository[Deal]):
         deal_id: Optional[int] = None,
         status: Optional[str] = None,
         from_xml: Optional[str] = None,
-        user_xml_codes: Optional[set[str]] = None,
+        user_id: Optional[int] = None,
     ) -> list[Deal]:
         query = select(Deal)
         if deal_id is not None:
@@ -24,8 +24,8 @@ class DealRepository(BaseRepository[Deal]):
             query = query.where(Deal.status == status)
         if from_xml:
             query = query.where(Deal.from_xml == from_xml)
-        elif user_xml_codes:
-            query = query.where(Deal.from_xml.in_(user_xml_codes))
+        if user_id:
+            query = query.where(Deal.user_id == user_id)
         query = query.order_by(Deal.received_at.desc())
         result = await self.session.execute(query)
         return list(result.scalars().all())
