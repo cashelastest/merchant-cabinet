@@ -13,6 +13,7 @@ class Deal(Base):
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
     uid: Mapped[int]
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     bizon_id: Mapped[Optional[str]] = mapped_column(nullable=True)
     secret: Mapped[str]
     to_values: Mapped[dict] = mapped_column(JSONB, server_default="{}")
