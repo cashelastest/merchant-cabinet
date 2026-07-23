@@ -47,28 +47,27 @@ async def create_deal(
     service: DealService = Depends(get_deal_service),
     session: AsyncSession = Depends(get_session),
 ):
-    import logging
+    import sys
     from repositories.user import UserRepository
 
-    logger = logging.getLogger(__name__)
-    logger.info(f"[deal/create] Incoming deal: uid={data.uid}, from_xml={data.from_xml}, to_xml={data.to_xml}")
+    print(f"[deal/create] Incoming deal: uid={data.uid}, from_xml={data.from_xml}, to_xml={data.to_xml}", file=sys.stdout, flush=True)
 
     # Find user that supports this currency
     user_repo = UserRepository(session)
     users = await user_repo.get_all()
-    logger.info(f"[deal/create] Total users in system: {len(users)}")
+    print(f"[deal/create] Total users in system: {len(users)}", file=sys.stdout, flush=True)
 
     deal_user = None
     for user in users:
         user_currencies = {c.xml for c in user.currencies}
-        logger.info(f"[deal/create] User {user.id} ({user.username}) supports currencies: {user_currencies}")
+        print(f"[deal/create] User {user.id} ({user.username}) supports: {user_currencies}", file=sys.stdout, flush=True)
         if data.from_xml in user_currencies:
             deal_user = user
-            logger.info(f"[deal/create] Matched user {user.id} ({user.username}) for currency {data.from_xml}")
+            print(f"[deal/create] Matched user {user.id} for currency {data.from_xml}", file=sys.stdout, flush=True)
             break
 
     if not deal_user:
-        logger.error(f"[deal/create] No user found for currency {data.from_xml}")
+        print(f"[deal/create] ERROR: No user found for currency {data.from_xml}", file=sys.stdout, flush=True)
         raise HTTPException(status_code=404, detail=f"No user found for currency {data.from_xml}")
 
     # Add user_id to deal data
@@ -76,9 +75,9 @@ async def create_deal(
     data_dict['user_id'] = deal_user.id
     deal_request = DealCreateRequest(**data_dict)
 
-    logger.info(f"[deal/create] Creating deal for user {deal_user.id}, uid={data.uid}")
+    print(f"[deal/create] Creating deal for user {deal_user.id}, uid={data.uid}", file=sys.stdout, flush=True)
     deal = await service.create(deal_request)
-    logger.info(f"[deal/create] Deal created: id={deal.id}, user_id={deal_user.id}, uid={data.uid}")
+    print(f"[deal/create] Deal created: id={deal.id}, user_id={deal_user.id}", file=sys.stdout, flush=True)
 
     deal_data = data.model_dump(mode="json")
     deal_data["id"] = deal.id
