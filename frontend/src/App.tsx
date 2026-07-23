@@ -3,7 +3,6 @@ import { AuthProvider } from './context/AuthContext';
 import AuthLayout from './layouts/AuthLayout';
 import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/auth/Login';
-import PayoutPage from './pages/payout/PayoutPage';
 import DealsPage from './pages/deals/DealsPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminRoute from './components/admin/AdminRoute';
@@ -29,8 +28,7 @@ export default function App() {
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
-            <Route path="/deals" element={<DealsPage />} />
-            <Route path="/payout" element={<PayoutPage />} />
+            <Route path="/payout" element={<DealsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/" element={<Navigate to="/payout" replace />} />
           </Route>

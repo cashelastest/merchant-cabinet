@@ -3,17 +3,6 @@ import styles from './Sidebar.module.css';
 
 const NAV = [
   {
-    to: '/deals',
-    label: 'Заявки',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M6 2h9l5 5v15H6V2z" />
-        <path d="M14 2v6h6" />
-        <path d="M9 13h6M9 17h6" />
-      </svg>
-    ),
-  },
-  {
     to: '/payout',
     label: 'Выплаты',
     icon: (
