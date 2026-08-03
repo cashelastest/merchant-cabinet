@@ -8,7 +8,7 @@ import DealRow from '../components/DealRow'
 const COLUMNS = [
   'Change Status', 'Estimate', 'Request ID', 'Status',
   'Currency', 'Card Holder', 'Card Number', 'Phone Number',
-  'External Bank Name', 'Amount',
+  'External Bank Name', 'Amount', 'Receipt',
 ]
 
 interface Props {
