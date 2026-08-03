@@ -1,6 +1,7 @@
 """Metrics endpoint for Prometheus."""
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from core.dependencies import get_session
@@ -9,7 +10,7 @@ from models import Deal
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
 
-@router.get("/deals")
+@router.get("/deals", response_class=PlainTextResponse)
 async def deals_metrics(session: AsyncSession = Depends(get_session)) -> str:
     """Prometheus metrics for deals."""
 

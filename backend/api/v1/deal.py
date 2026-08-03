@@ -191,16 +191,16 @@ async def update_deal_status(
 
 @router.websocket("/ws/deals")
 async def deals_ws(websocket: WebSocket, token: str = Query()) -> None:
-    await websocket.accept()
-
     try:
         user_id = _decode_token(token)
         session = SessionLocal()
         user = await UserRepository(session).get_with_currencies(user_id)
         if not user:
+            await websocket.accept()
             await websocket.close(code=1008, reason="User not found")
             return
     except HTTPException:
+        await websocket.accept()
         await websocket.close(code=1008, reason="Invalid token")
         return
 
