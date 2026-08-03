@@ -1,31 +1,20 @@
-import { useEffect, useState, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import adminClient from '../../api/adminClient';
 import LanguageSwitcher from '../../components/LanguageSwitcher/LanguageSwitcher';
 import styles from './Admin.module.css';
 
-interface AdminPayout {
+interface AdminDeal {
   id: number;
+  uid: number;
   user_id: number;
-  amount: number;
-  currency: string;
-  card_holder: string | null;
-  card_number: string | null;
-  phone_number: string | null;
-  bank_name: string | null;
-  receipt_url: string | null;
+  from_xml: string;
+  to_xml: string;
   status: string;
+  to_values: { outAmount?: number; cardHolder?: string; cardNumber?: string; phoneNumber?: string; bankName?: string; [key: string]: any };
+  receipt_url: string | null;
   created_at: string;
-  user_username: string | null;
-}
-
-interface AdminUser {
-  id: number;
-  username: string;
-  balance: number;
-  is_active: boolean;
-  currencies: string[];
 }
 
 function fmt(iso: string | null): string {
@@ -33,43 +22,27 @@ function fmt(iso: string | null): string {
   return new Date(iso + (iso.endsWith('Z') ? '' : 'Z')).toLocaleString('ru-RU');
 }
 
-export default function AdminPayouts() {
+export default function AdminDeals() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [payouts, setPayouts] = useState<AdminPayout[]>([]);
+  const { userId } = useParams<{ userId: string }>();
+  const [deals, setDeals] = useState<AdminDeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [userBalance, setUserBalance] = useState<number | null>(null);
   const [uploadingReceipt, setUploadingReceipt] = useState<Record<number, boolean>>({});
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const [dateFrom, setDateFrom] = useState(today);
-  const [dateTo, setDateTo] = useState(today);
-  const [status, setStatus] = useState('');
-  const [todayOnly, setTodayOnly] = useState(true);
-
   useEffect(() => {
-    fetchPayouts();
-  }, []);
+    fetchDeals();
+  }, [userId]);
 
-  const fetchPayouts = async (e?: FormEvent) => {
-    e?.preventDefault();
+  const fetchDeals = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (todayOnly) {
-        params.set('today', 'true');
-      } else {
-        if (dateFrom) params.set('date_from', dateFrom);
-        if (dateTo) params.set('date_to', dateTo);
-      }
-      if (status) params.set('status', status);
       const data = await adminClient
-        .get<AdminPayout[]>(`/admin/payouts?${params}`)
+        .get<AdminDeal[]>(`/admin/deals/${userId}`)
         .then((r) => r.data);
-      setPayouts(data);
+      setDeals(data);
     } catch {
       setError('Access denied or session expired');
     } finally {
@@ -77,56 +50,40 @@ export default function AdminPayouts() {
     }
   };
 
-  const totalAmount = payouts.reduce((sum, p) => sum + p.amount, 0);
-
   const logout = () => {
     localStorage.removeItem('adminToken');
     navigate('/admin/login');
   };
 
-
-  const handleUploadReceipt = async (payoutId: number, file: File) => {
-    setUploadingReceipt((p) => ({ ...p, [payoutId]: true }));
+  const handleUploadReceipt = async (dealId: number, file: File) => {
+    setUploadingReceipt((p) => ({ ...p, [dealId]: true }));
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await adminClient.post<{ url: string }>(`/admin/payouts/${payoutId}/receipt`, formData, {
+      const response = await adminClient.post<{ receipt_url: string }>(`/deal/${dealId}/receipt`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setPayouts((prev) => prev.map((p) => p.id === payoutId ? { ...p, receipt_url: response.data.url } : p));
+      setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, receipt_url: response.data.receipt_url } : d));
     } catch {
       alert('Failed to upload receipt');
     } finally {
-      setUploadingReceipt((p) => ({ ...p, [payoutId]: false }));
+      setUploadingReceipt((p) => ({ ...p, [dealId]: false }));
     }
   };
 
-  const handleStatusChange = async (payoutId: number, newStatus: string) => {
+  const handleStatusChange = async (dealId: number, newStatus: string) => {
     try {
-      await adminClient.patch(`/admin/payouts/${payoutId}/status?status=${newStatus}`);
-      setPayouts((prev) => prev.map((p) => p.id === payoutId ? { ...p, status: newStatus } : p));
+      await adminClient.patch(`/deal/${dealId}/status?status=${newStatus}`);
+      setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, status: newStatus } : d));
     } catch (e: any) {
       alert(`Failed to update status: ${e.response?.data?.detail || 'Unknown error'}`);
-    }
-  };
-
-  const handleResetBalance = async (userId: number) => {
-    if (!window.confirm('Are you sure you want to reset this user\'s balance to 0?')) {
-      return;
-    }
-    try {
-      await adminClient.post(`/admin/users/${userId}/reset-balance`);
-      setUserBalance(0);
-      alert('Balance reset to 0');
-    } catch (e: any) {
-      alert(`Failed to reset balance: ${e.response?.data?.detail || 'Unknown error'}`);
     }
   };
 
   return (
     <div className={styles.page}>
       <div className={styles.topbar}>
-        <h1 className={styles.pageTitle}>{t('admin.payouts.title')}</h1>
+        <h1 className={styles.pageTitle}>Deal Management</h1>
         <div className={styles.topbarActions}>
           <LanguageSwitcher />
           <button className={styles.navBtn} onClick={() => navigate('/admin/users')}>
@@ -136,114 +93,49 @@ export default function AdminPayouts() {
         </div>
       </div>
 
-      {/* Filters */}
-      <form className={styles.filterBar} onSubmit={fetchPayouts}>
-        <label className={styles.checkboxLabel}>
-          <input
-            type="checkbox"
-            checked={todayOnly}
-            onChange={(e) => setTodayOnly(e.target.checked)}
-          />
-          {t('admin.payouts.filters.today_only')}
-        </label>
-
-        <input
-          type="date"
-          className={styles.dateInput}
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          disabled={todayOnly}
-        />
-        <span className={styles.dateSep}>—</span>
-        <input
-          type="date"
-          className={styles.dateInput}
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          disabled={todayOnly}
-        />
-
-        <select
-          className={styles.filterSelect}
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="">{t('admin.payouts.filters.all_statuses')}</option>
-          <option value="pending">pending</option>
-          <option value="processing">processing</option>
-          <option value="completed">completed</option>
-          <option value="failed">failed</option>
-          <option value="cancelled">cancelled</option>
-        </select>
-
-        <button type="submit" className={styles.saveBtn}>
-          {t('admin.payouts.buttons.apply')}
-        </button>
-      </form>
-
-      {/* Summary */}
-      <div className={styles.summary}>
-        <span>{t('admin.payouts.table.total_payouts')}: <strong>{payouts.length}</strong></span>
-        <span>{t('admin.payouts.table.total_amount')}: <strong>{totalAmount.toLocaleString()}</strong></span>
-      </div>
-
       {error && <div className={styles.error}>{error}</div>}
 
       {loading ? (
         <div className={styles.empty}>{t('common.loading')}</div>
-      ) : payouts.length === 0 ? (
+      ) : deals.length === 0 ? (
         <div className={styles.empty}>{t('common.no_data')}</div>
       ) : (
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>{t('admin.payouts.table.id')}</th>
-                <th>{t('admin.payouts.table.user')}</th>
-                <th>{t('admin.payouts.table.amount')}</th>
-                <th>{t('admin.payouts.table.currency')}</th>
-                <th>Получатель</th>
-                <th>Номер карты</th>
-                <th>Телефон</th>
-                <th>Банк</th>
-                <th>{t('admin.payouts.table.status')}</th>
-                <th>{t('admin.payouts.table.receipt')}</th>
+                <th>ID</th>
+                <th>UID</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Amount</th>
+                <th>Card Holder</th>
+                <th>Status</th>
+                <th>Receipt</th>
+                <th>Created</th>
               </tr>
             </thead>
             <tbody>
-              {payouts.map((p) => (
-                <tr key={p.id}>
-                  <td>#{p.id}</td>
+              {deals.map((d) => (
+                <tr key={d.id}>
+                  <td>#{d.id}</td>
+                  <td>{d.uid}</td>
+                  <td>{d.from_xml}</td>
+                  <td>{d.to_xml}</td>
+                  <td>{d.to_values?.outAmount ? Number(d.to_values.outAmount).toLocaleString() : '—'}</td>
+                  <td>{d.to_values?.cardHolder || '—'}</td>
                   <td>
-                    {p.user_username ? (
-                      <span
-                        onClick={() => navigate(`/admin/deals/${p.user_id}`)}
-                        style={{ color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline' }}
-                      >
-                        {p.user_username}
-                      </span>
-                    ) : (
-                      <span style={{ color: '#666' }}>—</span>
-                    )}
-                  </td>
-                  <td>{p.amount.toLocaleString()}</td>
-                  <td>{p.currency}</td>
-                  <td>{p.card_holder || '—'}</td>
-                  <td>{p.card_number || '—'}</td>
-                  <td>{p.phone_number || '—'}</td>
-                  <td>{p.bank_name || '—'}</td>
-                  <td>
-                    {p.status === 'completed' || p.status === 'cancelled' ? (
-                      <span className={p.status === 'completed' ? styles.badgeActive : styles.badgePaused}>
-                        {p.status}
+                    {d.status === 'accepted' || d.status === 'refused' ? (
+                      <span className={d.status === 'accepted' ? styles.badgeActive : styles.badgePaused}>
+                        {d.status}
                       </span>
                     ) : (
                       <select
-                        value={p.status}
-                        onChange={(e) => handleStatusChange(p.id, e.target.value)}
+                        value={d.status}
+                        onChange={(e) => handleStatusChange(d.id, e.target.value)}
                         style={{
                           backgroundColor: '#1a1a1a',
-                          color: p.status === 'completed' ? '#4ade80' : '#f87171',
+                          color: '#fff',
                           border: '1px solid #333',
                           borderRadius: '4px',
                           padding: '4px 8px',
@@ -253,10 +145,9 @@ export default function AdminPayouts() {
                         }}
                       >
                         <option value="pending">pending</option>
-                        <option value="processing">processing</option>
-                        <option value="completed">completed</option>
-                        <option value="failed">failed</option>
-                        <option value="cancelled">cancelled</option>
+                        <option value="in_progress">in_progress</option>
+                        <option value="accepted">accepted</option>
+                        <option value="refused">refused</option>
                       </select>
                     )}
                   </td>
@@ -266,30 +157,31 @@ export default function AdminPayouts() {
                       borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
                       border: 'none', display: 'block',
                     }}>
-                      {uploadingReceipt[p.id] ? t('admin.payouts.buttons.uploading') : t('admin.payouts.buttons.upload')}
+                      {uploadingReceipt[d.id] ? '...' : 'Upload'}
                       <input
                         type="file"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) handleUploadReceipt(p.id, file);
+                          if (file) handleUploadReceipt(d.id, file);
                         }}
                         style={{ display: 'none' }}
-                        disabled={uploadingReceipt[p.id]}
+                        disabled={uploadingReceipt[d.id]}
                       />
                     </label>
-                    {p.receipt_url && (
+                    {d.receipt_url && (
                       <button
-                        onClick={() => setViewingReceipt(p.receipt_url!)}
+                        onClick={() => setViewingReceipt(d.receipt_url!)}
                         style={{
                           backgroundColor: '#4ade80', color: '#000', padding: '6px 12px',
                           borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
                           border: 'none',
                         }}
                       >
-                        {t('admin.payouts.buttons.view')}
+                        View
                       </button>
                     )}
                   </td>
+                  <td>{fmt(d.created_at)}</td>
                 </tr>
               ))}
             </tbody>
@@ -307,7 +199,7 @@ export default function AdminPayouts() {
             maxWidth: '600px', width: '90%', maxHeight: '80vh', overflow: 'auto',
           }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <h3 style={{ margin: 0, color: '#fff' }}>{t('admin.payouts.table.receipt')}</h3>
+              <h3 style={{ margin: 0, color: '#fff' }}>Receipt</h3>
               <button onClick={() => setViewingReceipt(null)} style={{
                 backgroundColor: '#2a2a2a', color: '#fff', border: 'none', padding: '8px 12px',
                 borderRadius: '4px', cursor: 'pointer',

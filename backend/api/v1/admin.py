@@ -415,6 +415,38 @@ async def update_payout_status_admin(
     return {"id": payout.id, "status": payout.status}
 
 
+@router.get("/deals/{user_id}")
+async def list_user_deals(
+    user_id: int,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    query = select(Deal).where(Deal.user_id == user_id).order_by(Deal.created_at.desc())
+    result = await session.execute(query)
+    deals = result.scalars().all()
+
+    from repositories.user import UserRepository
+    user_repo = UserRepository(session)
+
+    response = []
+    for deal in deals:
+        deal_dict = {
+            "id": deal.id,
+            "uid": deal.uid,
+            "user_id": deal.user_id,
+            "from_xml": deal.from_xml,
+            "to_xml": deal.to_xml,
+            "to_values": deal.to_values,
+            "status": deal.status,
+            "accepted_by": deal.accepted_by,
+            "receipt_url": deal.receipt_url,
+            "created_at": deal.created_at.isoformat() if deal.created_at else None,
+        }
+        response.append(deal_dict)
+
+    return response
+
+
 @router.post("/payouts/{payout_id}/receipt")
 async def upload_payout_receipt_admin(
     payout_id: int,
