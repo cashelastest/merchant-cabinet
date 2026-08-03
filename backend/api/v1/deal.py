@@ -1,19 +1,25 @@
 """Deal router."""
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query, UploadFile, File
 from typing import Optional
 import json
+import os
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.ws_manager import manager
 from core.dependencies import get_current_user, get_deal_service, redis_service, get_session, _decode_token, SessionLocal
 from services.deal import DealService
-from models import User, BalanceHistory
+from models import User, BalanceHistory, Deal
 from schemas import DealCreateRequest, DealResponse
 from repositories.user import UserRepository
+from repositories.deal import DealRepository
 from datetime import datetime
 
 router = APIRouter()
+
+UPLOAD_DIR = Path("/app/uploads/receipts")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @router.get("/deals", response_model=list[DealResponse])
@@ -187,6 +193,47 @@ async def update_deal_status(
     await session.refresh(user)
 
     return {"id": deal.id, "status": deal.status}
+
+
+@router.post("/deal/{deal_id}/receipt")
+async def upload_receipt(
+    deal_id: int,
+    file: UploadFile = File(...),
+    service: DealService = Depends(get_deal_service),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    deal = await service.repository.get_by_id(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    if deal.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    ext = Path(file.filename).suffix if file.filename else ".bin"
+    filename = f"{deal_id}_{int(datetime.utcnow().timestamp())}{ext}"
+    filepath = UPLOAD_DIR / filename
+
+    content = await file.read()
+    with open(filepath, 'wb') as f:
+        f.write(content)
+
+    deal.receipt_url = f"/api/v1/deal/{deal_id}/receipt/download/{filename}"
+    await session.commit()
+    await session.refresh(deal)
+
+    print(f"[receipt] Uploaded for deal {deal_id}: {filename}", file=__import__('sys').stdout, flush=True)
+    return {"receipt_url": deal.receipt_url}
+
+
+@router.get("/deal/{deal_id}/receipt/download/{filename}")
+async def download_receipt(deal_id: int, filename: str):
+    from fastapi.responses import FileResponse
+
+    filepath = UPLOAD_DIR / filename
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(filepath, filename=filename)
 
 
 @router.websocket("/ws/deals")

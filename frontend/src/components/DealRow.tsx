@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { Deal } from '../types'
 import { acceptDeal } from '../api'
 import CountdownTimer from './CountdownTimer'
@@ -21,6 +21,8 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function DealRow({ deal, onAccepted }: Props) {
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function handleAccept() {
     setLoading(true)
@@ -29,6 +31,27 @@ export default function DealRow({ deal, onAccepted }: Props) {
       onAccepted(deal.id)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch(`/api/v1/deal/${deal.id}/receipt`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.merchantToken}` },
+        body: formData,
+      })
+      if (!res.ok) throw new Error('Upload failed')
+      window.location.reload()
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -71,6 +94,34 @@ export default function DealRow({ deal, onAccepted }: Props) {
       <td className="px-3 py-3 text-gray-300 text-xs">{v.bankName ?? '—'}</td>
       <td className="px-3 py-3 text-white font-semibold text-sm">
         {v.outAmount != null ? Number(v.outAmount).toLocaleString() : '—'}
+      </td>
+      <td className="px-3 py-3 flex gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          onChange={handleFileUpload}
+          style={{ display: 'none' }}
+          accept=".pdf,.jpg,.jpeg,.png,.gif"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          title="Upload receipt"
+          className="px-2 py-1 rounded text-xs bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 transition"
+        >
+          {uploading ? '⏳' : '📎'}
+        </button>
+        {deal.receipt_url && (
+          <a
+            href={deal.receipt_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="View receipt"
+            className="px-2 py-1 rounded text-xs bg-blue-600 hover:bg-blue-700 text-white transition"
+          >
+            👁️
+          </a>
+        )}
       </td>
     </tr>
   )
