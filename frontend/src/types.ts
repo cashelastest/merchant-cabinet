@@ -9,6 +9,7 @@ export interface User {
 export interface Deal {
   id: number;
   uid: number;
+  user_id: number;
   secret: string;
   to_values: {
     outAmount?: number;
@@ -28,10 +29,12 @@ export interface Deal {
   to_image_xml: string;
   status: string;
   accepted_by: number | null;
+  accepted_by_username?: string | null;
   accepted_at: string | null;
   received_at: string | null;
   created_at: string;
   updated_at: string | null;
+  receipt_url?: string | null;
 }
 
 export interface TokenResponse {
