@@ -1,6 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getDeals, acceptDeal, refuseDeal, completeDeal } from '../../api/deals';
+import {
+  getDeals,
+  acceptDeal,
+  refuseDeal,
+  completeDeal,
+  uploadDealReceipt,
+  fetchDealReceipt,
+  RECEIPT_ACCEPT,
+  RECEIPT_MAX_SIZE,
+} from '../../api/deals';
 import type { Deal } from '../../types';
 import CountdownTimer from '../../components/CountdownTimer/CountdownTimer';
 import styles from './DealsPage.module.css';
@@ -12,6 +21,9 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   refused:     { bg: '#4d1a1a', color: '#f87171' },
 };
 
+/** Rows stored with a status outside the list above must still render. */
+const STATUS_FALLBACK = { bg: '#1e1e1e', color: '#a0a0a0' };
+
 function getValue(values: Record<string, unknown>, key: string): string {
   const v = values[key];
   return v !== undefined && v !== null ? String(v) : '—';
@@ -22,6 +34,8 @@ export default function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [actioningId, setActioningId] = useState<number | null>(null);
+  const [uploadingId, setUploadingId] = useState<number | null>(null);
+  const [receipt, setReceipt] = useState<{ dealId: number; url: string; isPdf: boolean } | null>(null);
 
   // filters
   const [filterId, setFilterId] = useState('');
@@ -30,6 +44,7 @@ export default function DealsPage() {
 
 
   const wsRef = useRef<WebSocket | null>(null);
+  const receiptUrlRef = useRef<string | null>(null);
 
   const fetchDeals = useCallback(async () => {
     try {
@@ -170,6 +185,52 @@ export default function DealsPage() {
     }
   };
 
+  const closeReceipt = () => {
+    if (receiptUrlRef.current) {
+      URL.revokeObjectURL(receiptUrlRef.current);
+      receiptUrlRef.current = null;
+    }
+    setReceipt(null);
+  };
+
+  // release the last blob URL when leaving the page
+  useEffect(() => () => {
+    if (receiptUrlRef.current) URL.revokeObjectURL(receiptUrlRef.current);
+  }, []);
+
+  const handleUploadReceipt = async (dealId: number, file: File) => {
+    if (file.size > RECEIPT_MAX_SIZE) {
+      alert('File is too large (max 10 MB)');
+      return;
+    }
+    setUploadingId(dealId);
+    try {
+      const { receipt_url } = await uploadDealReceipt(dealId, file);
+      setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, receipt_url } : d));
+    } catch {
+      alert('Failed to upload receipt');
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
+  const handleViewReceipt = async (deal: Deal) => {
+    if (!deal.receipt_url) return;
+    try {
+      const blob = await fetchDealReceipt(deal.receipt_url);
+      closeReceipt();
+      const url = URL.createObjectURL(blob);
+      receiptUrlRef.current = url;
+      setReceipt({
+        dealId: deal.id,
+        url,
+        isPdf: blob.type === 'application/pdf' || deal.receipt_url.toLowerCase().endsWith('.pdf'),
+      });
+    } catch {
+      alert('Failed to load receipt');
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.breadcrumb}>{t('deals.breadcrumb')}</div>
@@ -241,7 +302,7 @@ export default function DealsPage() {
             {!loading && deals.map((deal) => {
               const isPending    = deal.status === 'pending';
               const isInProgress = deal.status === 'in_progress';
-              const sc = STATUS_COLORS[deal.status];
+              const sc = STATUS_COLORS[deal.status] ?? STATUS_FALLBACK;
               const tv = deal.to_values;
 
               return (
@@ -281,7 +342,36 @@ export default function DealsPage() {
                     )}
                   </td>
 
-                  <td className={styles.cell}>—</td>
+                  <td className={styles.receiptCell}>
+                    <label
+                      className={styles.btnUpload}
+                      title={deal.receipt_url ? 'Replace receipt' : 'Upload receipt'}
+                    >
+                      {uploadingId === deal.id ? '⏳' : '📎'}
+                      <input
+                        type="file"
+                        accept={RECEIPT_ACCEPT}
+                        className={styles.fileInput}
+                        disabled={uploadingId === deal.id}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = '';
+                          if (file) handleUploadReceipt(deal.id, file);
+                        }}
+                      />
+                    </label>
+                    {deal.receipt_url ? (
+                      <button
+                        className={styles.btnView}
+                        onClick={() => handleViewReceipt(deal)}
+                        title="View receipt"
+                      >
+                        👁
+                      </button>
+                    ) : (
+                      <span className={styles.receiptEmpty}>—</span>
+                    )}
+                  </td>
 
                   <td className={styles.timerCell}>
                     {isPending && (
@@ -293,7 +383,7 @@ export default function DealsPage() {
 
                   <td>
                     <span className={styles.statusBadge} style={{ backgroundColor: sc.bg, color: sc.color }}>
-                      {t(`deals.status_badge.${deal.status}`)}
+                      {t(`deals.status_badge.${deal.status}`, { defaultValue: deal.status })}
                     </span>
                   </td>
 
@@ -309,6 +399,31 @@ export default function DealsPage() {
           </tbody>
         </table>
       </div>
+
+      {receipt && (
+        <div className={styles.modalOverlay} onClick={closeReceipt}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <span>Receipt — deal #{receipt.dealId}</span>
+              <div className={styles.modalActions}>
+                <a
+                  className={styles.btnDownload}
+                  href={receipt.url}
+                  download={`receipt_deal_${receipt.dealId}${receipt.isPdf ? '.pdf' : ''}`}
+                >
+                  Download
+                </a>
+                <button className={styles.modalClose} onClick={closeReceipt}>✕</button>
+              </div>
+            </div>
+            {receipt.isPdf ? (
+              <iframe className={styles.receiptPdf} src={receipt.url} title="receipt" />
+            ) : (
+              <img className={styles.receiptImage} src={receipt.url} alt="receipt" />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

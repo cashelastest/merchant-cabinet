@@ -28,3 +28,20 @@ export const refuseDeal = (id: number) =>
 
 export const completeDeal = (id: number) =>
   client.post<{ id: number; status: string }>(`/deal/${id}/complete`).then((r) => r.data);
+
+export const RECEIPT_ACCEPT = '.pdf,.jpg,.jpeg,.png,.gif,.webp';
+export const RECEIPT_MAX_SIZE = 10 * 1024 * 1024;
+
+export const uploadDealReceipt = (id: number, file: File) => {
+  const form = new FormData();
+  form.append('file', file);
+  return client
+    .post<{ receipt_url: string }>(`/deal/${id}/receipt`, form)
+    .then((r) => r.data);
+};
+
+/** Receipts are served behind auth, so they are fetched as a blob, not linked directly. */
+export const fetchDealReceipt = (receiptUrl: string) =>
+  client
+    .get<Blob>(receiptUrl.replace(/^\/api\/v1/, ''), { responseType: 'blob' })
+    .then((r) => r.data);

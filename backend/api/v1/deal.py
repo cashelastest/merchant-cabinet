@@ -21,6 +21,9 @@ router = APIRouter()
 UPLOAD_DIR = Path("/app/uploads/receipts")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+ALLOWED_RECEIPT_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp"}
+MAX_RECEIPT_SIZE = 10 * 1024 * 1024  # 10 MB
+
 
 @router.get("/deals", response_model=list[DealResponse])
 async def list_deals(
@@ -209,11 +212,25 @@ async def upload_receipt(
     if deal.user_id != user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    ext = Path(file.filename).suffix if file.filename else ".bin"
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in ALLOWED_RECEIPT_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type. Allowed: {', '.join(sorted(ALLOWED_RECEIPT_EXTENSIONS))}",
+        )
+
+    content = await file.read()
+    if len(content) > MAX_RECEIPT_SIZE:
+        raise HTTPException(status_code=413, detail="File is too large (max 10 MB)")
+    if not content:
+        raise HTTPException(status_code=400, detail="File is empty")
+
+    # Only one receipt per deal — drop the previously stored file, if any.
+    previous = Path(deal.receipt_url).name if deal.receipt_url else None
+
     filename = f"{deal_id}_{int(datetime.utcnow().timestamp())}{ext}"
     filepath = UPLOAD_DIR / filename
 
-    content = await file.read()
     with open(filepath, 'wb') as f:
         f.write(content)
 
@@ -221,19 +238,45 @@ async def upload_receipt(
     await session.commit()
     await session.refresh(deal)
 
+    if previous and previous != filename:
+        try:
+            (UPLOAD_DIR / previous).unlink(missing_ok=True)
+        except OSError:
+            pass
+
     print(f"[receipt] Uploaded for deal {deal_id}: {filename}", file=__import__('sys').stdout, flush=True)
     return {"receipt_url": deal.receipt_url}
 
 
 @router.get("/deal/{deal_id}/receipt/download/{filename}")
-async def download_receipt(deal_id: int, filename: str):
+async def download_receipt(
+    deal_id: int,
+    filename: str,
+    service: DealService = Depends(get_deal_service),
+    user: User = Depends(get_current_user),
+):
     from fastapi.responses import FileResponse
 
-    filepath = UPLOAD_DIR / filename
-    if not filepath.exists():
+    # Reject anything that is not a bare file name (path traversal).
+    if filename != Path(filename).name:
+        raise HTTPException(status_code=400, detail="Invalid file name")
+
+    deal = await service.repository.get_by_id(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    if deal.user_id != user.id and not user.is_admin:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # The file must be the one actually attached to this deal, so a valid
+    # deal_id cannot be paired with someone else's file name.
+    if not deal.receipt_url or Path(deal.receipt_url).name != filename:
         raise HTTPException(status_code=404, detail="File not found")
 
-    return FileResponse(filepath, filename=filename)
+    filepath = (UPLOAD_DIR / filename).resolve()
+    if not filepath.is_file() or UPLOAD_DIR.resolve() not in filepath.parents:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(filepath, filename=filename, content_disposition_type="inline")
 
 
 @router.websocket("/ws/deals")
