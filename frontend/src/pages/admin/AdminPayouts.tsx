@@ -42,7 +42,7 @@ export default function AdminPayouts() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [userBalance, setUserBalance] = useState<number | null>(null);
   const [uploadingReceipt, setUploadingReceipt] = useState<Record<number, boolean>>({});
-  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<{ url: string; isPdf: boolean } | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
   const [dateFrom, setDateFrom] = useState(today);
@@ -99,6 +99,28 @@ export default function AdminPayouts() {
     } finally {
       setUploadingReceipt((p) => ({ ...p, [payoutId]: false }));
     }
+  };
+
+  // Receipts are no longer public files: fetch them with the admin token.
+  const handleViewReceipt = async (payoutId: number) => {
+    try {
+      const { data: blob } = await adminClient.get<Blob>(`/payout/${payoutId}/receipt`, {
+        responseType: 'blob',
+      });
+      setViewingReceipt((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url);
+        return { url: URL.createObjectURL(blob), isPdf: blob.type === 'application/pdf' };
+      });
+    } catch {
+      alert('Failed to load receipt');
+    }
+  };
+
+  const closeReceipt = () => {
+    setViewingReceipt((prev) => {
+      if (prev) URL.revokeObjectURL(prev.url);
+      return null;
+    });
   };
 
   const handleStatusChange = async (payoutId: number, newStatus: string) => {
@@ -279,7 +301,7 @@ export default function AdminPayouts() {
                     </label>
                     {p.receipt_url && (
                       <button
-                        onClick={() => setViewingReceipt(p.receipt_url!)}
+                        onClick={() => handleViewReceipt(p.id)}
                         style={{
                           backgroundColor: '#4ade80', color: '#000', padding: '6px 12px',
                           borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
@@ -301,24 +323,24 @@ export default function AdminPayouts() {
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001,
-        }} onClick={() => setViewingReceipt(null)}>
+        }} onClick={closeReceipt}>
           <div style={{
             backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px',
             maxWidth: '600px', width: '90%', maxHeight: '80vh', overflow: 'auto',
           }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
               <h3 style={{ margin: 0, color: '#fff' }}>{t('admin.payouts.table.receipt')}</h3>
-              <button onClick={() => setViewingReceipt(null)} style={{
+              <button onClick={closeReceipt} style={{
                 backgroundColor: '#2a2a2a', color: '#fff', border: 'none', padding: '8px 12px',
                 borderRadius: '4px', cursor: 'pointer',
               }}>
                 ✕
               </button>
             </div>
-            {viewingReceipt.endsWith('.pdf') ? (
-              <embed src={viewingReceipt} type="application/pdf" style={{ width: '100%', height: '500px' }} />
+            {viewingReceipt.isPdf ? (
+              <iframe src={viewingReceipt.url} title="receipt" style={{ width: '100%', height: '500px', border: 'none' }} />
             ) : (
-              <img src={viewingReceipt} alt="receipt" style={{ width: '100%', borderRadius: '4px' }} />
+              <img src={viewingReceipt.url} alt="receipt" style={{ width: '100%', borderRadius: '4px' }} />
             )}
           </div>
         </div>

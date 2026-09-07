@@ -15,6 +15,11 @@ from datetime import datetime
 
 router = APIRouter(prefix="/payout")
 
+UPLOAD_DIR = Path("/app/uploads/receipts")
+
+ALLOWED_RECEIPT_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp"}
+MAX_RECEIPT_SIZE = 10 * 1024 * 1024  # 10 MB
+
 # Simple payout WebSocket manager for broadcasting updates to connected users
 class PayoutConnectionManager:
     def __init__(self):
@@ -221,20 +226,72 @@ async def upload_payout_receipt(
     if not payout:
         raise HTTPException(status_code=404, detail="Payout not found")
 
-    # Create uploads directory if it doesn't exist
-    upload_dir = Path("/app/uploads/receipts")
-    upload_dir.mkdir(parents=True, exist_ok=True)
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in ALLOWED_RECEIPT_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type. Allowed: {', '.join(sorted(ALLOWED_RECEIPT_EXTENSIONS))}",
+        )
 
-    # Save file
-    file_path = upload_dir / f"payout_{payout_id}_{file.filename}"
-    async with aiofiles.open(file_path, "wb") as f:
-        content = await file.read()
+    content = await file.read()
+    if len(content) > MAX_RECEIPT_SIZE:
+        raise HTTPException(status_code=413, detail="File is too large (max 10 MB)")
+    if not content:
+        raise HTTPException(status_code=400, detail="File is empty")
+
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Only one receipt per payout — drop the previously stored file, if any.
+    previous = Path(payout.receipt_url).name if payout.receipt_url else None
+
+    # The uploaded name is never used on disk: it is attacker-controlled and
+    # would allow escaping the upload directory.
+    filename = f"payout_{payout_id}_{int(datetime.now().timestamp())}{ext}"
+    async with aiofiles.open(UPLOAD_DIR / filename, "wb") as f:
         await f.write(content)
 
-    # Save URL in database
-    receipt_url = f"/uploads/receipts/payout_{payout_id}_{file.filename}"
-    payout.receipt_url = receipt_url
+    payout.receipt_url = f"/uploads/receipts/{filename}"
     await session.commit()
     await session.refresh(payout)
 
-    return {"url": receipt_url}
+    if previous and previous != filename:
+        try:
+            (UPLOAD_DIR / previous).unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    return {"url": payout.receipt_url}
+
+
+@router.get("/{payout_id}/receipt")
+async def download_payout_receipt(
+    payout_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Serves the receipt file itself, behind auth.
+
+    The stored receipt_url is treated as an existence marker plus a file name,
+    so rows written before this endpoint existed keep working unchanged.
+    """
+    from fastapi.responses import FileResponse
+    from models import Payout
+    from sqlalchemy import select
+
+    stmt = select(Payout).where(Payout.id == payout_id)
+    result = await session.execute(stmt)
+    payout = result.scalar_one_or_none()
+
+    if not payout:
+        raise HTTPException(status_code=404, detail="Payout not found")
+    if payout.user_id != user.id and not user.is_admin:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if not payout.receipt_url:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    filename = Path(payout.receipt_url).name
+    filepath = (UPLOAD_DIR / filename).resolve()
+    if not filepath.is_file() or UPLOAD_DIR.resolve() not in filepath.parents:
+        raise HTTPException(status_code=404, detail="Receipt file is missing")
+
+    return FileResponse(filepath, filename=filename, content_disposition_type="inline")

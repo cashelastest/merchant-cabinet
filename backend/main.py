@@ -2,7 +2,6 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from core.dependencies import engine, redis_service, SessionLocal
@@ -56,6 +55,9 @@ app.include_router(admin_router, prefix="/api/v1")
 app.include_router(payout_router, prefix="/api/v1")
 app.include_router(metrics_router, prefix="/api/v1")
 
+# Receipts are deliberately NOT served statically. They are payment documents,
+# and the old /uploads mount let anyone who guessed a file name read them
+# without a token. They are now served by the authorised endpoints in the
+# deal and payout routers, which check ownership first.
 uploads_path = Path("/app/uploads")
 uploads_path.mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")

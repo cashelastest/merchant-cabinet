@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -6,6 +6,10 @@ import CountdownTimer from '../../components/CountdownTimer/CountdownTimer';
 import styles from './PayoutPage.module.css';
 
 const FIVE_MINUTES_SECONDS = 300;
+const POLL_INTERVAL_MS = 5000;
+
+const RECEIPT_ACCEPT = '.pdf,.jpg,.jpeg,.png,.gif,.webp';
+const RECEIPT_MAX_SIZE = 10 * 1024 * 1024;
 
 const PAYOUT_STATUSES = ['pending', 'processing', 'completed', 'failed', 'cancelled'];
 
@@ -37,18 +41,27 @@ export default function PayoutPage() {
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingReceipt, setUploadingReceipt] = useState<Record<number, boolean>>({});
-  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<{ payoutId: number; url: string; isPdf: boolean } | null>(null);
+  const receiptUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     fetchPayouts();
-    const interval = setInterval(pollPayouts, 1000);
+    const interval = setInterval(pollPayouts, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
+  }, []);
+
+  // release the last blob URL when leaving the page
+  useEffect(() => () => {
+    if (receiptUrlRef.current) URL.revokeObjectURL(receiptUrlRef.current);
   }, []);
 
   const fetchPayouts = async () => {
     try {
       const data = await client.get<Payout[]>('/payout/').then((r) => r.data);
       setPayouts(data);
+    } catch {
+      // an empty table would otherwise be indistinguishable from a failed load
+      alert('Failed to load payouts');
     } finally {
       setLoading(false);
     }
@@ -60,37 +73,60 @@ export default function PayoutPage() {
       setPayouts((prev) => {
         const existingIds = new Set(prev.map((p) => p.id));
         const newPayouts = data.filter((p) => !existingIds.has(p.id));
-        console.log('[POLL]', { prevCount: prev.length, allCount: data.length, newCount: newPayouts.length, newIds: newPayouts.map(p => p.id) });
         if (newPayouts.length > 0) {
           return [...newPayouts, ...prev];
         }
         return prev;
       });
-    } catch (e) {
-      console.error('[POLL ERROR]', e);
+    } catch {
+      // transient poll failure — the next tick retries
     }
   };
 
   const handleUploadReceipt = async (payoutId: number, file: File) => {
+    if (file.size > RECEIPT_MAX_SIZE) {
+      alert('File is too large (max 10 MB)');
+      return;
+    }
     setUploadingReceipt((p) => ({ ...p, [payoutId]: true }));
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch(`/api/v1/payout/${payoutId}/receipt/`, {
-        method: 'POST',
-        body: formData,
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('merchantToken')}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setPayouts((prev) => prev.map((p) => p.id === payoutId ? { ...p, receipt_url: data.url } : p));
-      } else {
-        alert(`Upload failed: ${response.status} ${response.statusText}`);
-      }
+      const { data } = await client.post<{ url: string }>(`/payout/${payoutId}/receipt/`, formData);
+      setPayouts((prev) => prev.map((p) => p.id === payoutId ? { ...p, receipt_url: data.url } : p));
     } catch {
       alert('Failed to upload receipt');
     } finally {
       setUploadingReceipt((p) => ({ ...p, [payoutId]: false }));
+    }
+  };
+
+  const closeReceipt = () => {
+    if (receiptUrlRef.current) {
+      URL.revokeObjectURL(receiptUrlRef.current);
+      receiptUrlRef.current = null;
+    }
+    setReceipt(null);
+  };
+
+  // Receipts are behind auth, so the file is fetched as a blob rather than
+  // linked directly — an <img src> would carry no Authorization header.
+  const handleViewReceipt = async (payout: Payout) => {
+    if (!payout.receipt_url) return;
+    try {
+      const { data: blob } = await client.get<Blob>(`/payout/${payout.id}/receipt`, {
+        responseType: 'blob',
+      });
+      closeReceipt();
+      const url = URL.createObjectURL(blob);
+      receiptUrlRef.current = url;
+      setReceipt({
+        payoutId: payout.id,
+        url,
+        isPdf: blob.type === 'application/pdf' || payout.receipt_url.toLowerCase().endsWith('.pdf'),
+      });
+    } catch {
+      alert('Failed to load receipt');
     }
   };
 
@@ -200,8 +236,10 @@ export default function PayoutPage() {
                       {uploadingReceipt[p.id] ? t('admin.payouts.buttons.uploading') : t('admin.payouts.buttons.upload')}
                       <input
                         type="file"
+                        accept={RECEIPT_ACCEPT}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
+                          e.target.value = '';
                           if (file) handleUploadReceipt(p.id, file);
                         }}
                         style={{ display: 'none' }}
@@ -210,7 +248,7 @@ export default function PayoutPage() {
                     </label>
                     {p.receipt_url && (
                       <button
-                        onClick={() => setViewingReceipt(p.receipt_url!)}
+                        onClick={() => handleViewReceipt(p)}
                         style={{
                           backgroundColor: '#4ade80', color: '#000', padding: '6px 12px',
                           borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
@@ -228,28 +266,42 @@ export default function PayoutPage() {
         </table>
       </div>
 
-      {viewingReceipt && (
+      {receipt && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001,
-        }} onClick={() => setViewingReceipt(null)}>
+        }} onClick={closeReceipt}>
           <div style={{
             backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px',
             maxWidth: '600px', width: '90%', maxHeight: '80vh', overflow: 'auto',
           }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <h3 style={{ margin: 0, color: '#fff' }}>{t('admin.payouts.table.receipt')}</h3>
-              <button onClick={() => setViewingReceipt(null)} style={{
-                backgroundColor: '#2a2a2a', color: '#fff', border: 'none', padding: '8px 12px',
-                borderRadius: '4px', cursor: 'pointer',
-              }}>
-                ✕
-              </button>
+              <h3 style={{ margin: 0, color: '#fff' }}>
+                {t('admin.payouts.table.receipt')} — #{receipt.payoutId}
+              </h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <a
+                  href={receipt.url}
+                  download={`receipt_payout_${receipt.payoutId}${receipt.isPdf ? '.pdf' : ''}`}
+                  style={{
+                    backgroundColor: '#0066cc', color: '#fff', padding: '8px 12px',
+                    borderRadius: '4px', textDecoration: 'none', fontSize: '12px', fontWeight: 'bold',
+                  }}
+                >
+                  {t('common.download', { defaultValue: 'Download' })}
+                </a>
+                <button onClick={closeReceipt} style={{
+                  backgroundColor: '#2a2a2a', color: '#fff', border: 'none', padding: '8px 12px',
+                  borderRadius: '4px', cursor: 'pointer',
+                }}>
+                  ✕
+                </button>
+              </div>
             </div>
-            {viewingReceipt.endsWith('.pdf') ? (
-              <embed src={viewingReceipt} type="application/pdf" style={{ width: '100%', height: '500px' }} />
+            {receipt.isPdf ? (
+              <iframe src={receipt.url} title="receipt" style={{ width: '100%', height: '500px', border: 'none' }} />
             ) : (
-              <img src={viewingReceipt} alt="receipt" style={{ width: '100%', borderRadius: '4px' }} />
+              <img src={receipt.url} alt="receipt" style={{ width: '100%', borderRadius: '4px' }} />
             )}
           </div>
         </div>

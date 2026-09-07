@@ -459,13 +459,31 @@ async def upload_payout_receipt_admin(
         raise HTTPException(status_code=404, detail="Payout not found")
 
     from pathlib import Path
+    from datetime import datetime as _dt
+    from api.v1.payout import ALLOWED_RECEIPT_EXTENSIONS, MAX_RECEIPT_SIZE
+
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in ALLOWED_RECEIPT_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type. Allowed: {', '.join(sorted(ALLOWED_RECEIPT_EXTENSIONS))}",
+        )
+
+    contents = await file.read()
+    if len(contents) > MAX_RECEIPT_SIZE:
+        raise HTTPException(status_code=413, detail="File is too large (max 10 MB)")
+    if not contents:
+        raise HTTPException(status_code=400, detail="File is empty")
+
     upload_dir = Path("/app/uploads/receipts")
     upload_dir.mkdir(parents=True, exist_ok=True)
 
-    filename = f"payout_{payout_id}_{file.filename}"
+    previous = Path(payout.receipt_url).name if payout.receipt_url else None
+
+    # Never build the on-disk name from the uploaded file name.
+    filename = f"payout_{payout_id}_{int(_dt.now().timestamp())}{ext}"
     filepath = upload_dir / filename
 
-    contents = await file.read()
     import aiofiles
     async with aiofiles.open(filepath, "wb") as f:
         await f.write(contents)
@@ -473,5 +491,11 @@ async def upload_payout_receipt_admin(
     url = f"/uploads/receipts/{filename}"
     payout.receipt_url = url
     await session.commit()
+
+    if previous and previous != filename:
+        try:
+            (upload_dir / previous).unlink(missing_ok=True)
+        except OSError:
+            pass
 
     return {"url": url}
