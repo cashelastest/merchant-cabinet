@@ -19,7 +19,7 @@ function getSecondsLeft(receivedAt: string | null, estimate: number): number {
   return Math.max(0, Math.floor(estimate - elapsed));
 }
 
-export default function CountdownTimer({ receivedAt, isActive, estimate = 120 }: Props) {
+export default function CountdownTimer({ receivedAt, isActive, estimate = 300 }: Props) {
   const [secondsLeft, setSecondsLeft] = useState(() => getSecondsLeft(receivedAt, estimate));
 
   useEffect(() => {
