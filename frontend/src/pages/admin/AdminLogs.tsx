@@ -39,7 +39,7 @@ export default function AdminLogs() {
             {t('nav.admin_users')}
           </button>
           <button className={styles.navBtn} onClick={() => navigate('/admin/deals')}>
-            {t('nav.admin_logs')}
+            Deals
           </button>
           <button className={styles.logoutBtn} onClick={logout}>{t('nav.logout')}</button>
         </div>

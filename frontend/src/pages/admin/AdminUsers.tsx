@@ -148,9 +148,6 @@ export default function AdminUsers() {
         <h1 className={styles.pageTitle}>{t('admin.users.title')}</h1>
         <div className={styles.topbarActions}>
           <LanguageSwitcher />
-          <button className={styles.navBtn} onClick={() => navigate('/admin/payouts')}>
-            {t('admin.payouts.title')}
-          </button>
           <button className={styles.navBtn} onClick={() => navigate('/admin/deals')}>
             Deals
           </button>

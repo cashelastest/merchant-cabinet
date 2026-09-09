@@ -115,9 +115,6 @@ export default function AdminDeals() {
           <button className={styles.navBtn} onClick={() => navigate('/admin/users')}>
             {t('nav.admin_users')}
           </button>
-          <button className={styles.navBtn} onClick={() => navigate('/admin/payouts')}>
-            {t('admin.payouts.title')}
-          </button>
           <button className={styles.logoutBtn} onClick={logout}>{t('nav.logout')}</button>
         </div>
       </div>

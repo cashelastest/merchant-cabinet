@@ -91,12 +91,12 @@ export default function DealsHistoryPage() {
   return (
     <div className={styles.page}>
       <div className={styles.topbar}>
-        <button onClick={() => navigate('/admin/payouts')} style={{
+        <button onClick={() => navigate('/admin/users')} style={{
           backgroundColor: 'transparent', color: '#60a5fa', border: 'none',
           cursor: 'pointer', fontSize: '14px', textDecoration: 'underline',
           marginBottom: '15px',
         }}>
-          ← Вернуться в админку выплат
+          ← Вернуться к пользователям
         </button>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 className={styles.pageTitle}>История пользователя (User #{userId})</h1>
