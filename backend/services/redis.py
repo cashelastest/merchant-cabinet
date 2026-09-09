@@ -16,11 +16,11 @@ class RedisService:
     def __init__(self, client: Redis) -> None:
         self._client = client
 
-    async def publish_deal(self, deal_id: int, data: dict, from_xml: str) -> None:
+    async def publish_deal(self, deal_id: int, data: dict, payout_xml: str) -> None:
         await self._client.publish("deals", json.dumps({
             "event": "new_deal",
             "deal_id": deal_id,
-            "from_xml": from_xml,
+            "payout_xml": payout_xml,
             "data": data,
         }))
 

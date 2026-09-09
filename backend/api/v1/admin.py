@@ -205,10 +205,14 @@ async def list_deals_admin(
         deal_dict = {
             "id": deal.id,
             "uid": deal.uid,
+            "user_id": deal.user_id,
             "from_xml": deal.from_xml,
             "from_name": deal.from_name,
+            # to_xml is the payout currency — the one merchants are matched by
+            "to_xml": deal.to_xml,
             "to_name": deal.to_name,
             "to_values": deal.to_values,
+            "receipt_url": deal.receipt_url,
             "status": deal.status,
             "accepted_by": deal.accepted_by,
             "accepted_by_username": None,

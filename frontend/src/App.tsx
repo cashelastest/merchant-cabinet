@@ -10,6 +10,7 @@ import AdminRoute from './components/admin/AdminRoute';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminPayouts from './pages/admin/AdminPayouts';
+import AdminDeals from './pages/admin/AdminDeals';
 import AdminLogs from './pages/admin/AdminLogs';
 import DealsHistoryPage from './pages/deals/DealsHistoryPage';
 import SettingsPage from './pages/settings/SettingsPage';
@@ -43,6 +44,7 @@ export default function App() {
         <Route element={<AdminRoute />}>
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/payouts" element={<AdminPayouts />} />
+          <Route path="/admin/deals" element={<AdminDeals />} />
           <Route path="/admin/deals/:userId" element={<DealsHistoryPage />} />
           <Route path="/admin/logs" element={<AdminLogs />} />
         </Route>

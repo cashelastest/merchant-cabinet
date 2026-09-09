@@ -103,7 +103,7 @@ async def create_deal(
     ws_message = json.dumps({
         "event": "new_deal",
         "deal_id": deal.id,
-        "from_xml": data.from_xml,
+        "payout_xml": payout_xml,
         "data": deal_data,
     })
 

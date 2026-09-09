@@ -26,7 +26,7 @@
     "breadcrumb": "Заявки / Список",
     "filters": {
       "request_id": "ID заявки",
-      "currency": "Валюта (from_xml)"
+      "currency": "Валюта выплаты"
     },
     "table": {
       "request_id": "ID заявки",
@@ -54,7 +54,7 @@
     "breadcrumb": "История / Список",
     "filters": {
       "request_id": "ID заявки",
-      "currency": "Валюта (from_xml)",
+      "currency": "Валюта выплаты",
       "all_statuses": "Все статусы",
       "completed": "Выполнена",
       "rejected": "Отклонена"

@@ -9,8 +9,11 @@ from typing import List
 class UserRepository(BaseRepository[User]):
 
     async def get_all(self) -> List[User]:
+        # Ordering is not cosmetic here: without it Postgres returns rows in an
+        # arbitrary order that shifts after updates, which both reshuffles the
+        # admin list and makes deal-to-merchant matching non-deterministic.
         result = await self.session.execute(
-            select(User).options(selectinload(User.currencies))
+            select(User).options(selectinload(User.currencies)).order_by(User.id)
         )
         return list(result.scalars().all())
 

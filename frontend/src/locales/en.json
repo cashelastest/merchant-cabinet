@@ -26,7 +26,7 @@
     "breadcrumb": "Deals / List",
     "filters": {
       "request_id": "Request ID",
-      "currency": "Currency (from_xml)"
+      "currency": "Payout currency"
     },
     "table": {
       "request_id": "Request Id",
@@ -54,7 +54,7 @@
     "breadcrumb": "History / List",
     "filters": {
       "request_id": "Request ID",
-      "currency": "Currency (from_xml)",
+      "currency": "Payout currency",
       "all_statuses": "All statuses",
       "completed": "Completed",
       "rejected": "Rejected"
