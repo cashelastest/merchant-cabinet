@@ -29,8 +29,10 @@ export default function App() {
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
-            <Route path="/payout" element={<PayoutPage />} />
-            <Route path="/deals" element={<DealsPage />} />
+            <Route path="/payout" element={<DealsPage />} />
+            {/* Payout requests are a separate entity from deals; kept reachable
+                for checking the payouts table, but /payout stays on deals. */}
+            <Route path="/payouts" element={<PayoutPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/" element={<Navigate to="/payout" replace />} />
           </Route>

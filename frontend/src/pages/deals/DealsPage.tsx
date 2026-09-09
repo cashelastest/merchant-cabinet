@@ -24,6 +24,16 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 /** Rows stored with a status outside the list above must still render. */
 const STATUS_FALLBACK = { bg: '#1e1e1e', color: '#a0a0a0' };
 
+/**
+ * Statuses selectable from the current one. Absent key = terminal, no edits.
+ * Each target maps to a dedicated endpoint rather than PATCH /deal/{id}/status,
+ * because those keep the balance and the Bizon sync correct.
+ */
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  pending:     ['pending', 'in_progress', 'refused'],
+  in_progress: ['in_progress', 'accepted', 'refused'],
+};
+
 function getValue(values: Record<string, unknown>, key: string): string {
   const v = values[key];
   return v !== undefined && v !== null ? String(v) : '—';
@@ -149,37 +159,17 @@ export default function DealsPage() {
     fetchDeals();
   };
 
-  const handleAccept = async (dealId: number) => {
-    setActioningId(dealId);
+  const handleStatusSelect = async (deal: Deal, next: string) => {
+    if (next === deal.status) return;
+    setActioningId(deal.id);
     try {
-      const res = await acceptDeal(dealId);
-      setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, status: res.status } : d));
+      const res =
+        next === 'in_progress' ? await acceptDeal(deal.id) :
+        next === 'accepted'    ? await completeDeal(deal.id) :
+                                 await refuseDeal(deal.id);
+      setDeals((prev) => prev.map((d) => d.id === deal.id ? { ...d, status: res.status } : d));
     } catch {
-      alert('Failed to accept deal');
-    } finally {
-      setActioningId(null);
-    }
-  };
-
-  const handleRefuse = async (dealId: number) => {
-    setActioningId(dealId);
-    try {
-      const res = await refuseDeal(dealId);
-      setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, status: res.status } : d));
-    } catch {
-      alert('Failed to refuse deal');
-    } finally {
-      setActioningId(null);
-    }
-  };
-
-  const handleComplete = async (dealId: number) => {
-    setActioningId(dealId);
-    try {
-      const res = await completeDeal(dealId);
-      setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, status: res.status } : d));
-    } catch {
-      alert('Failed to complete deal');
+      alert('Failed to update status');
     } finally {
       setActioningId(null);
     }
@@ -308,37 +298,22 @@ export default function DealsPage() {
               return (
                 <tr key={deal.id} className={isPending || isInProgress ? styles.rowActive : styles.rowInactive}>
                   <td className={styles.actionsCell}>
-                    {isPending && (
-                      <>
-                        <button
-                          className={styles.btnAccept}
-                          onClick={() => handleAccept(deal.id)}
-                          disabled={actioningId === deal.id}
-                          title={t('deals.buttons.accept')}
-                        >
-                          ✓
-                        </button>
-                        <button
-                          className={styles.btnRefuse}
-                          onClick={() => handleRefuse(deal.id)}
-                          disabled={actioningId === deal.id}
-                          title={t('deals.buttons.refuse')}
-                        >
-                          ✕
-                        </button>
-                      </>
-                    )}
-                    {isInProgress && (
-                      <>
-                        <button
-                          className={styles.btnComplete}
-                          onClick={() => handleComplete(deal.id)}
-                          disabled={actioningId === deal.id}
-                          title={t('deals.buttons.complete')}
-                        >
-                          ✓
-                        </button>
-                      </>
+                    {STATUS_TRANSITIONS[deal.status] ? (
+                      <select
+                        className={styles.statusSelect}
+                        value={deal.status}
+                        disabled={actioningId === deal.id}
+                        onChange={(e) => handleStatusSelect(deal, e.target.value)}
+                        style={{ color: sc.color, borderColor: sc.color }}
+                      >
+                        {STATUS_TRANSITIONS[deal.status].map((s) => (
+                          <option key={s} value={s}>
+                            {t(`deals.status_badge.${s}`, { defaultValue: s })}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className={styles.statusLocked}>—</span>
                     )}
                   </td>
 

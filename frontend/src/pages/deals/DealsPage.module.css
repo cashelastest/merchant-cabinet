@@ -175,73 +175,33 @@
   background-color: #141414;
 }
 
-/* Action buttons */
 .actionsCell {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
   min-width: 110px;
 }
 
-.btnAccept {
-  padding: 6px 14px;
-  background-color: #1a3a60;
-  border: 1px solid #2563eb;
-  border-radius: 6px;
-  color: #60a5fa;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-  text-align: center;
-}
-.btnAccept:hover:not(:disabled) { background-color: #1e4a80; color: #93c5fd; }
-.btnAccept:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.btnRefuse {
-  padding: 6px 14px;
-  background-color: #1e1e1e;
+/* Status dropdown */
+.statusSelect {
+  padding: 6px 10px;
+  background-color: #0a0a0a;
   border: 1px solid #2a2a2a;
   border-radius: 6px;
-  color: #808080;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-  text-align: center;
-}
-.btnRefuse:hover:not(:disabled) { background-color: #2d1a1a; border-color: #4d2626; color: #f87171; }
-.btnRefuse:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.btnComplete {
-  padding: 6px 14px;
-  background-color: #1a4d1a;
-  border: 1px solid #264d26;
-  border-radius: 6px;
-  color: #4ade80;
   font-size: 12px;
   font-weight: 600;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-  text-align: center;
+  cursor: pointer;
+  outline: none;
+  min-width: 118px;
 }
-.btnComplete:hover:not(:disabled) { background-color: #1f6b1f; }
-.btnComplete:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.btnCancel {
-  padding: 6px 14px;
-  background-color: #2d1a1a;
-  border: 1px solid #4d2626;
-  border-radius: 6px;
-  color: #f87171;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-  text-align: center;
+.statusSelect:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.statusSelect option {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
 }
-.btnCancel:hover:not(:disabled) { background-color: #3d2020; }
-.btnCancel:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.statusLocked {
+  color: #5a5a5a;
+}
 
 /* Receipt cell */
 .receiptCell {
@@ -393,15 +353,6 @@
   font-family: 'Courier New', monospace;
 }
 
-.walletCell {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  color: #a0a0a0;
-  white-space: nowrap;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 .amountCell {
   color: #e0e0e0;
