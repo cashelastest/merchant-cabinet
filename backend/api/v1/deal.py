@@ -29,12 +29,12 @@ MAX_RECEIPT_SIZE = 10 * 1024 * 1024  # 10 MB
 async def list_deals(
     deal_id: Optional[int] = None,
     status: Optional[str] = None,
-    from_xml: Optional[str] = None,
+    to_xml: Optional[str] = None,
     service: DealService = Depends(get_deal_service),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    deals = await service.list_deals(user, deal_id, status, from_xml)
+    deals = await service.list_deals(user, deal_id, status, to_xml)
     user_repo = UserRepository(session)
     result = []
     for deal in deals:
@@ -61,7 +61,11 @@ async def create_deal(
 
     print(f"[deal/create] Incoming deal: uid={data.uid}, from_xml={data.from_xml}, to_xml={data.to_xml}", file=sys.stdout, flush=True)
 
-    # Find user that supports this currency
+    # This is a payout cabinet: a merchant is picked by the currency it pays
+    # OUT in, which is to_xml — the one configured in the merchant's settings.
+    # from_xml is only what the client paid with and routes nothing.
+    payout_xml = data.to_xml
+
     user_repo = UserRepository(session)
     users = await user_repo.get_all()
     print(f"[deal/create] Total users in system: {len(users)}", file=sys.stdout, flush=True)
@@ -70,14 +74,14 @@ async def create_deal(
     for user in users:
         user_currencies = {c.xml for c in user.currencies}
         print(f"[deal/create] User {user.id} ({user.username}) supports: {user_currencies}", file=sys.stdout, flush=True)
-        if data.from_xml in user_currencies:
+        if payout_xml in user_currencies:
             deal_user = user
-            print(f"[deal/create] Matched user {user.id} for currency {data.from_xml}", file=sys.stdout, flush=True)
+            print(f"[deal/create] Matched user {user.id} for payout currency {payout_xml}", file=sys.stdout, flush=True)
             break
 
     if not deal_user:
-        print(f"[deal/create] ERROR: No user found for currency {data.from_xml}", file=sys.stdout, flush=True)
-        raise HTTPException(status_code=404, detail=f"No user found for currency {data.from_xml}")
+        print(f"[deal/create] ERROR: No user found for payout currency {payout_xml}", file=sys.stdout, flush=True)
+        raise HTTPException(status_code=404, detail=f"No user found for payout currency {payout_xml}")
 
     # Add user_id to deal data
     data_dict = data.model_dump()
@@ -103,11 +107,12 @@ async def create_deal(
         "data": deal_data,
     })
 
-    # Broadcast to matching merchants and all admins
-    await manager.broadcast_to_matching(ws_message, data.from_xml)
+    # Must use the same currency the merchant was picked by, otherwise a deal
+    # is stored against one merchant and pushed live to a different set of them.
+    await manager.broadcast_to_matching(ws_message, payout_xml)
 
     try:
-        await redis_service.publish_deal(deal.id, deal_data, data.from_xml)
+        await redis_service.publish_deal(deal.id, deal_data, payout_xml)
     except Exception:
         pass
 
@@ -186,7 +191,7 @@ async def update_deal_status(
             user_id=user.id,
             action="deal_accepted",
             amount=float(amount),
-            reason=f"Deal #{deal.id} accepted ({deal.from_xml})",
+            reason=f"Deal #{deal.id} accepted ({deal.to_xml})",
             created_at=datetime.now(),
         )
         session.add(history)

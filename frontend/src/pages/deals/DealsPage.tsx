@@ -61,7 +61,7 @@ export default function DealsPage() {
       const data = await getDeals({
         deal_id: filterId ? Number(filterId) : undefined,
         status: filterStatus || undefined,
-        from_xml: filterXml || undefined,
+        to_xml: filterXml || undefined,
       });
       setDeals(data);
     } finally {
@@ -362,12 +362,12 @@ export default function DealsPage() {
                     </span>
                   </td>
 
-                  <td className={styles.cell}>{deal.from_xml}</td>
+                  <td className={styles.cell}>{deal.to_xml}</td>
                   <td className={styles.cell}>{getValue(tv, 'cardHolder')}</td>
                   <td className={styles.cell}>{getValue(tv, 'cardNumber')}</td>
                   <td className={styles.cell}>{getValue(tv, 'phoneNumber')}</td>
                   <td className={styles.cell}>{getValue(tv, 'bankName')}</td>
-                  <td className={styles.amountCell}>{getValue(tv, 'outAmount')} {deal.from_xml}</td>
+                  <td className={styles.amountCell}>{getValue(tv, 'outAmount')} {deal.to_xml}</td>
                 </tr>
               );
             })}

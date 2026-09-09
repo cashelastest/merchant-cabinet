@@ -4,7 +4,7 @@ import type { Deal, User } from '../types';
 export interface DealFilters {
   deal_id?: number;
   status?: string;
-  from_xml?: string;
+  to_xml?: string;
 }
 
 export const getDeals = (filters: DealFilters = {}) => {

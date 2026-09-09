@@ -32,10 +32,10 @@ class ConnectionManager:
         if ws in self._connections:
             self._connections[ws].xml_codes = xml_codes
 
-    async def broadcast_to_matching(self, message: str, from_xml: str) -> None:
+    async def broadcast_to_matching(self, message: str, payout_xml: str) -> None:
         for ws, session in list(self._connections.items()):
-            # Send to active merchants with matching currency OR to all admins
-            if session.is_admin or (session.is_active and from_xml in session.xml_codes):
+            # Send to active merchants paying out in this currency, or to all admins
+            if session.is_admin or (session.is_active and payout_xml in session.xml_codes):
                 try:
                     await ws.send_text(message)
                 except Exception:

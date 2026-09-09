@@ -40,9 +40,9 @@ class DealService(BaseService):
         user: User,
         deal_id: Optional[int] = None,
         status: Optional[str] = None,
-        from_xml: Optional[str] = None,
+        to_xml: Optional[str] = None,
     ) -> list[Deal]:
-        return await self.repository.get_all(deal_id, status, from_xml, user.id)
+        return await self.repository.get_all(deal_id, status, to_xml, user.id)
 
     async def accept(self, deal_id: int, user_id: int) -> Deal:
         deal = await self.repository.get_by_id(deal_id)

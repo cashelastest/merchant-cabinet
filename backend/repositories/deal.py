@@ -14,7 +14,7 @@ class DealRepository(BaseRepository[Deal]):
         self,
         deal_id: Optional[int] = None,
         status: Optional[str] = None,
-        from_xml: Optional[str] = None,
+        to_xml: Optional[str] = None,
         user_id: Optional[int] = None,
     ) -> list[Deal]:
         query = select(Deal)
@@ -22,8 +22,9 @@ class DealRepository(BaseRepository[Deal]):
             query = query.where(Deal.id == deal_id)
         if status:
             query = query.where(Deal.status == status)
-        if from_xml:
-            query = query.where(Deal.from_xml == from_xml)
+        if to_xml:
+            # Filtering is on the payout currency, the one merchants work in.
+            query = query.where(Deal.to_xml == to_xml)
         if user_id:
             query = query.where(Deal.user_id == user_id)
         query = query.order_by(Deal.received_at.desc())
