@@ -28,9 +28,12 @@ async def deals_metrics(session: AsyncSession = Depends(get_session)) -> str:
     lines = [
         "# HELP deals_total Total number of deals",
         "# TYPE deals_total counter",
+        # "accepted" is the terminal success status for a deal; there is no
+        # "completed" one, so that label always reported zero and finished
+        # deals were missing from the totals.
         f'deals_total{{status="pending"}} {status_counts.get("pending", 0)}',
         f'deals_total{{status="in_progress"}} {status_counts.get("in_progress", 0)}',
-        f'deals_total{{status="completed"}} {status_counts.get("completed", 0)}',
+        f'deals_total{{status="accepted"}} {status_counts.get("accepted", 0)}',
         f'deals_total{{status="refused"}} {status_counts.get("refused", 0)}',
         "",
         "# HELP deals_count Total count of deals",

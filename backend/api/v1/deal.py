@@ -8,9 +8,9 @@ from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.ws_manager import manager
-from core.dependencies import get_current_user, get_deal_service, redis_service, get_session, _decode_token, SessionLocal
+from core.dependencies import get_current_user, get_deal_service, redis_service, get_session, _decode_token, SessionLocal, get_user_by_api_key
 from services.deal import DealService
-from models import User, BalanceHistory, Deal
+from models import User, BalanceHistory, Deal, ApiKeyLog
 from schemas import DealCreateRequest, DealResponse
 from repositories.user import UserRepository
 from repositories.deal import DealRepository
@@ -55,11 +55,18 @@ async def create_deal(
     data: DealCreateRequest,
     service: DealService = Depends(get_deal_service),
     session: AsyncSession = Depends(get_session),
+    caller: User = Depends(get_user_by_api_key),
 ):
+    """Creates a payout request.
+
+    Requires a valid X-API-Key. The key only authenticates the caller — which
+    merchant executes the payout is still decided by to_xml, so the caller does
+    not have to hold the key of the merchant that ends up with the request.
+    """
     import sys
     from repositories.user import UserRepository
 
-    print(f"[deal/create] Incoming deal: uid={data.uid}, from_xml={data.from_xml}, to_xml={data.to_xml}", file=sys.stdout, flush=True)
+    print(f"[deal/create] Incoming deal: uid={data.uid}, from_xml={data.from_xml}, to_xml={data.to_xml}, caller={caller.username}", file=sys.stdout, flush=True)
 
     # This is a payout cabinet: a merchant is picked by the currency it pays
     # OUT in, which is to_xml — the one configured in the merchant's settings.
@@ -91,6 +98,14 @@ async def create_deal(
     print(f"[deal/create] Creating deal for user {deal_user.id}, uid={data.uid}", file=sys.stdout, flush=True)
     deal = await service.create(deal_request)
     print(f"[deal/create] Deal created: id={deal.id}, user_id={deal_user.id}", file=sys.stdout, flush=True)
+
+    session.add(ApiKeyLog(
+        username=caller.username,
+        used_at=datetime.now(),
+        purpose=f"create_deal #{deal.id} ({payout_xml})",
+        key_type="merchant",
+    ))
+    await session.commit()
 
     deal_data = data.model_dump(mode="json")
     deal_data["id"] = deal.id

@@ -222,8 +222,8 @@
           "refId": "B"
         },
         {
-          "expr": "deals_total{status=\"completed\"}",
-          "legendFormat": "Completed",
+          "expr": "deals_total{status=\"accepted\"}",
+          "legendFormat": "Accepted",
           "refId": "C"
         },
         {
