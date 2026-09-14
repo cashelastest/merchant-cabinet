@@ -48,9 +48,15 @@ class ConnectionManager:
         if ws in self._connections:
             self._connections[ws].is_active = is_active
 
-    def update_xml_codes(self, ws: WebSocket, xml_codes: set[str]) -> None:
-        if ws in self._connections:
-            self._connections[ws].xml_codes = xml_codes
+    def update_user_xml_codes(self, user_id: int, xml_codes: set[str]) -> None:
+        """Applies a changed currency list to every live socket of one user.
+
+        A socket captures the list when it connects, so without this a merchant
+        keeps missing deals for a newly assigned currency until they reload.
+        """
+        for session in self._connections.values():
+            if session.user_id == user_id:
+                session.xml_codes = set(xml_codes)
 
     async def broadcast_to_matching(self, message: str, payout_xml: str) -> None:
         for ws, session in list(self._connections.items()):

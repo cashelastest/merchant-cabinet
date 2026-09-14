@@ -350,9 +350,9 @@ async def deals_ws(websocket: WebSocket, token: str = Query()) -> None:
                 action = msg.get("action")
                 if action in ("pause", "resume"):
                     manager.set_active(websocket, action == "resume")
-                elif action == "update_currencies":
-                    xml_codes = set(msg.get("currencies", []))
-                    manager.update_xml_codes(websocket, xml_codes)
+                # The currency list is deliberately not settable from the client:
+                # a socket could otherwise subscribe itself to other merchants'
+                # deals. The server pushes it when an admin changes it.
             except (ValueError, KeyError):
                 pass
     except WebSocketDisconnect:

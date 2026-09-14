@@ -141,18 +141,6 @@ export default function DealsPage() {
     return () => window.removeEventListener('session:status', handler);
   }, []);
 
-  // update currencies in WS without reconnecting
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const { currencies } = (e as CustomEvent<{ currencies: string[] }>).detail;
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ action: 'update_currencies', currencies }));
-      }
-    };
-    window.addEventListener('ws:update_currencies', handler);
-    return () => window.removeEventListener('ws:update_currencies', handler);
-  }, []);
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);

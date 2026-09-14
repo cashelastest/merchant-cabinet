@@ -46,12 +46,18 @@ class UserRepository(BaseRepository[User]):
         return result.scalar_one_or_none()
 
     async def set_currencies(self, user: User, xml_codes: list[str]) -> User:
+        # Normalise and de-duplicate up front: "uah, UAH " is one currency.
+        codes = list(dict.fromkeys(x.strip().upper() for x in xml_codes if x and x.strip()))
         currencies = []
-        for xml in xml_codes:
+        for xml in codes:
+            # currencies.xml has no unique constraint and duplicate rows do occur,
+            # e.g. two saves creating the same new code at once. scalar_one_or_none()
+            # raised MultipleResultsFound on such a code, so assigning that existing
+            # currency silently failed. Take the oldest row instead.
             result = await self.session.execute(
-                select(Currency).where(Currency.xml == xml)
+                select(Currency).where(Currency.xml == xml).order_by(Currency.id).limit(1)
             )
-            currency = result.scalar_one_or_none()
+            currency = result.scalars().first()
             if not currency:
                 currency = Currency(title=xml, xml=xml)
                 self.session.add(currency)

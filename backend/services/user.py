@@ -3,6 +3,7 @@ import bcrypt
 from repositories import UserRepository
 from models import User
 from schemas import CreateUserRequest
+from core.ws_manager import manager
 
 
 class UserService:
@@ -32,4 +33,8 @@ class UserService:
         await self.repository.set_currencies(user, xml_codes)
         await self.repository.session.commit()
         await self.repository.session.refresh(user)
+        # Open sockets captured the currency list when they connected. Push the new
+        # one, otherwise the merchant keeps missing live deals for a newly assigned
+        # currency until they reload the page.
+        manager.update_user_xml_codes(user.id, {c.xml for c in user.currencies})
         return user
