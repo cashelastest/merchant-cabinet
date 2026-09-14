@@ -85,7 +85,7 @@ export default function Header() {
                 {!isActive ? 'Inactive' : isPaused ? 'Paused' : 'Active'}
               </span>
               <span className={styles.balance}>
-                {user.username}: {Number(user.balance).toFixed(2)}
+                {user.username}: {Number(user.balance).toFixed(2)} USDT
               </span>
             </>
           )}

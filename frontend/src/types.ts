@@ -35,6 +35,8 @@ export interface Deal {
   created_at: string;
   updated_at: string | null;
   receipt_url?: string | null;
+  /** Caller's rate with the merchant's markup applied */
+  our_rate?: number | null;
 }
 
 export interface TokenResponse {

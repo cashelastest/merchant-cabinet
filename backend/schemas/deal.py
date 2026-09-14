@@ -1,10 +1,15 @@
 """Deal request schemas."""
 
+from decimal import Decimal
 from pydantic import BaseModel, field_validator
 from typing import Dict, Optional
 from datetime import datetime
 
 from .deal_status import DealStatus
+
+# deal.rate is NUMERIC(18, 8): at most 10 integer digits and 8 decimals.
+RATE_QUANT = Decimal("0.00000001")
+RATE_MAX = Decimal("10000000000")
 
 
 class DealCreateRequest(BaseModel):
@@ -19,6 +24,8 @@ class DealCreateRequest(BaseModel):
     to_name: str = ""
     to_image_xml: str = ""
     status: str
+    # The caller's own exchange rate. The merchant's markup is applied on top.
+    rate: Decimal
     created_at: datetime
     user_id: Optional[int] = None
 
@@ -32,6 +39,16 @@ class DealCreateRequest(BaseModel):
         if v not in allowed:
             raise ValueError(f"Unknown status '{v}'. Allowed: {', '.join(sorted(allowed))}")
         return v
+
+    @field_validator("rate")
+    @classmethod
+    def rate_valid(cls, v: Decimal) -> Decimal:
+        if v <= 0:
+            raise ValueError("Rate must be positive")
+        if v >= RATE_MAX:
+            raise ValueError("Rate is too large")
+        # Rounded rather than rejected: exchangers often send more decimals.
+        return v.quantize(RATE_QUANT)
 
 
 class DealPublish(DealCreateRequest):
@@ -60,5 +77,8 @@ class DealResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
     receipt_url: Optional[str] = None
+    # Merchants only get the rate with their markup applied; the caller's rate
+    # and the markup itself stay on the admin side.
+    our_rate: Optional[float] = None
 
     model_config = {"from_attributes": True}

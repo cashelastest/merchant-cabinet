@@ -10,12 +10,25 @@ interface AdminUser {
   username: string;
   is_active: boolean;
   is_admin: boolean;
+  is_banned: boolean;
   currencies: string[];
+  /** Markup percent per payout currency, e.g. { UAH: 2.5 } */
+  markups: Record<string, number>;
 }
 
 interface EditUser {
   username?: string;
   password?: string;
+}
+
+function errorDetail(e: unknown, fallback: string): string {
+  const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  if (typeof detail === 'string') return detail;
+  // FastAPI validation errors arrive as a list of { msg } objects
+  if (Array.isArray(detail)) {
+    return detail.map((d) => (d as { msg?: string })?.msg ?? '').filter(Boolean).join('; ') || fallback;
+  }
+  return fallback;
 }
 
 export default function AdminUsers() {
@@ -25,6 +38,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currencyInputs, setCurrencyInputs] = useState<Record<number, string>>({});
+  const [markupInputs, setMarkupInputs] = useState<Record<number, Record<string, string>>>({});
   const [saving, setSaving] = useState<Record<number, boolean>>({});
   const [saved, setSaved] = useState<Record<number, boolean>>({});
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -46,8 +60,15 @@ export default function AdminUsers() {
       const data = await adminClient.get<AdminUser[]>('/admin/users').then((r) => r.data);
       setUsers(data);
       const inputs: Record<number, string> = {};
-      data.forEach((u) => { inputs[u.id] = u.currencies.join(', '); });
+      const markups: Record<number, Record<string, string>> = {};
+      data.forEach((u) => {
+        inputs[u.id] = u.currencies.join(', ');
+        markups[u.id] = Object.fromEntries(
+          u.currencies.map((c) => [c, String(u.markups?.[c] ?? 0)]),
+        );
+      });
       setCurrencyInputs(inputs);
+      setMarkupInputs(markups);
     } catch {
       setError('Access denied or session expired');
     } finally {
@@ -56,16 +77,33 @@ export default function AdminUsers() {
   };
 
   const handleSave = async (userId: number) => {
+    const list = (currencyInputs[userId] ?? '')
+      .split(/[,\s]+/)
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+
+    // Markups are sent only for currencies that stay on the list. The PUT
+    // replaces the whole set, so a removed currency loses its markup as well.
+    const markups: Record<string, number> = {};
+    for (const c of list) {
+      const raw = (markupInputs[userId]?.[c] ?? '0').replace(',', '.').trim();
+      const value = raw === '' ? 0 : Number(raw);
+      if (!Number.isFinite(value)) {
+        alert(`Некорректная надбавка для ${c}: «${raw}»`);
+        return;
+      }
+      markups[c] = value;
+    }
+
     setSaving((p) => ({ ...p, [userId]: true }));
     try {
-      const list = (currencyInputs[userId] ?? '')
-        .split(/[,\s]+/)
-        .map((s) => s.trim().toUpperCase())
-        .filter(Boolean);
       await adminClient.patch(`/admin/users/${userId}/currencies`, { currencies: list });
+      await adminClient.put(`/admin/users/${userId}/markups`, { markups });
       setSaved((p) => ({ ...p, [userId]: true }));
       setTimeout(() => setSaved((p) => ({ ...p, [userId]: false })), 2000);
       await fetchUsers();
+    } catch (e) {
+      alert(errorDetail(e, 'Не удалось сохранить'));
     } finally {
       setSaving((p) => ({ ...p, [userId]: false }));
     }
@@ -87,8 +125,7 @@ export default function AdminUsers() {
       setTimeout(() => setCreateSuccess(false), 3000);
       await fetchUsers();
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setCreateError(msg || 'Error creating user');
+      setCreateError(errorDetail(e, 'Error creating user'));
     } finally {
       setCreating(false);
     }
@@ -101,6 +138,27 @@ export default function AdminUsers() {
       await fetchUsers();
     } finally {
       setSaving((p) => ({ ...p, [userId]: false }));
+    }
+  };
+
+  const handleToggleBan = async (user: AdminUser) => {
+    const banning = !user.is_banned;
+    if (
+      banning &&
+      !window.confirm(
+        `Забанить ${user.username}?\n\nПользователь будет разлогинен, API-ключ перестанет работать, новые заявки ему не пойдут.`,
+      )
+    ) {
+      return;
+    }
+    setSaving((p) => ({ ...p, [user.id]: true }));
+    try {
+      await adminClient.patch(`/admin/users/${user.id}`, { is_banned: banning });
+      await fetchUsers();
+    } catch (e) {
+      alert(errorDetail(e, 'Не удалось изменить бан'));
+    } finally {
+      setSaving((p) => ({ ...p, [user.id]: false }));
     }
   };
 
@@ -181,13 +239,15 @@ export default function AdminUsers() {
                 <th>{t('admin.users.password')}</th>
                 <th>{t('admin.users.status')}</th>
                 <th>Role</th>
+                <th>Бан</th>
                 <th>{t('admin.users.currencies')}</th>
+                <th>Надбавка к курсу, %</th>
                 <th>{t('admin.users.table.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.id}>
+                <tr key={u.id} style={u.is_banned ? { backgroundColor: '#1f1212' } : undefined}>
                   <td>{u.id}</td>
                   <td>
                     {editingId === u.id ? (
@@ -198,12 +258,19 @@ export default function AdminUsers() {
                         autoFocus
                       />
                     ) : (
-                      <span
-                        onClick={() => navigate(`/admin/deals/${u.id}`)}
-                        style={{ cursor: 'pointer', color: '#60a5fa', textDecoration: 'underline' }}
-                      >
-                        {u.username}
-                      </span>
+                      <>
+                        <span
+                          onClick={() => navigate(`/admin/deals/${u.id}`)}
+                          style={{ cursor: 'pointer', color: '#60a5fa', textDecoration: 'underline' }}
+                        >
+                          {u.username}
+                        </span>
+                        {u.is_banned && (
+                          <span style={{ marginLeft: '8px', color: '#f87171', fontSize: '11px', fontWeight: 600 }}>
+                            забанен
+                          </span>
+                        )}
+                      </>
                     )}
                   </td>
                   <td>
@@ -235,12 +302,51 @@ export default function AdminUsers() {
                     </span>
                   </td>
                   <td>
+                    {u.is_admin ? (
+                      <span style={{ color: '#666' }} title="Администратора забанить нельзя">—</span>
+                    ) : (
+                      <button
+                        className={u.is_banned ? styles.unbanBtn : styles.banBtn}
+                        onClick={() => handleToggleBan(u)}
+                        disabled={saving[u.id]}
+                      >
+                        {u.is_banned ? 'Разбанить' : 'Забанить'}
+                      </button>
+                    )}
+                  </td>
+                  <td>
                     <input
                       className={styles.currencyInput}
                       value={currencyInputs[u.id] ?? ''}
                       onChange={(e) => setCurrencyInputs((p) => ({ ...p, [u.id]: e.target.value }))}
                       placeholder="UAH, USDT, BTC"
                     />
+                  </td>
+                  <td>
+                    {u.currencies.length === 0 ? (
+                      <span style={{ color: '#666', fontSize: '12px' }}>сначала сохраните валюты</span>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {u.currencies.map((c) => (
+                          <label
+                            key={c}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#aaa' }}
+                          >
+                            <span style={{ minWidth: '44px', fontFamily: 'monospace', color: '#ccc' }}>{c}</span>
+                            <input
+                              className={styles.currencyInput}
+                              style={{ width: '80px' }}
+                              inputMode="decimal"
+                              value={markupInputs[u.id]?.[c] ?? '0'}
+                              onChange={(e) =>
+                                setMarkupInputs((p) => ({ ...p, [u.id]: { ...p[u.id], [c]: e.target.value } }))
+                              }
+                            />
+                            %
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td style={{ display: 'flex', gap: '6px' }}>
                     {editingId === u.id ? (
@@ -268,6 +374,13 @@ export default function AdminUsers() {
                           disabled={saving[u.id]}
                         >
                           {saving[u.id] ? 'Сохранение…' : saved[u.id] ? 'Сохранено ✓' : 'Сохранить'}
+                        </button>
+                        <button
+                          className={styles.resetBtn}
+                          onClick={() => handleEditClick(u)}
+                          disabled={saving[u.id]}
+                        >
+                          Изменить
                         </button>
                         <button
                           className={styles.deleteBtn}

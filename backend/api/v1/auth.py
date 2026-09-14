@@ -52,6 +52,9 @@ async def login(data: LoginRequest, service: UserService = Depends(get_user_serv
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    if user.is_banned:
+        raise HTTPException(status_code=403, detail="User is banned")
+
     if user.totp_secret:
         temp_token = jwt.encode(
             {"sub": str(user.id), "exp": datetime.now(UTC) + timedelta(minutes=5), "2fa_pending": True},

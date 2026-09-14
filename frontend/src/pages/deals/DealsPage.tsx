@@ -168,8 +168,10 @@ export default function DealsPage() {
         next === 'accepted'    ? await completeDeal(deal.id) :
                                  await refuseDeal(deal.id);
       setDeals((prev) => prev.map((d) => d.id === deal.id ? { ...d, status: res.status } : d));
-    } catch {
-      alert('Failed to update status');
+    } catch (e) {
+      // Show the server's reason, e.g. a deal that has no rate to settle with.
+      const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+      alert(typeof detail === 'string' ? detail : 'Failed to update status');
     } finally {
       setActioningId(null);
     }
@@ -271,6 +273,7 @@ export default function DealsPage() {
               <th>{t('deals.table.request_id')}</th>
               <th>{t('deals.table.status')}</th>
               <th>{t('deals.table.currency')}</th>
+              <th>{t('deals.table.rate')}</th>
               <th>Card Holder</th>
               <th>Card Number</th>
               <th>Phone Number</th>
@@ -281,12 +284,12 @@ export default function DealsPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={11} className={styles.emptyState}>{t('common.loading')}</td>
+                <td colSpan={12} className={styles.emptyState}>{t('common.loading')}</td>
               </tr>
             )}
             {!loading && deals.length === 0 && (
               <tr>
-                <td colSpan={11} className={styles.emptyState}>{t('common.no_data')}</td>
+                <td colSpan={12} className={styles.emptyState}>{t('common.no_data')}</td>
               </tr>
             )}
             {!loading && deals.map((deal) => {
@@ -363,6 +366,7 @@ export default function DealsPage() {
                   </td>
 
                   <td className={styles.cell}>{deal.to_xml}</td>
+                  <td className={styles.cell}>{deal.our_rate ?? '—'}</td>
                   <td className={styles.cell}>{getValue(tv, 'cardHolder')}</td>
                   <td className={styles.cell}>{getValue(tv, 'cardNumber')}</td>
                   <td className={styles.cell}>{getValue(tv, 'phoneNumber')}</td>

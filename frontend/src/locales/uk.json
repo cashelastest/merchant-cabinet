@@ -36,10 +36,11 @@
       "wallet": "USDT гаманець",
       "amount": "Сума",
       "accepted_by": "Прийняв користувач",
-      "created": "Створена"
+      "created": "Створена",
+      "rate": "Курс"
     },
     "status_badge": {
-      "accepted": "ПРИЙНЯТА",
+      "accepted": "УСПІШНО",
       "refused": "ВІДХИЛЕНА",
       "pending": "ОЧІКУВАННЯ",
       "in_progress": "В ОБРОБЦІ"

@@ -36,10 +36,11 @@
       "wallet": "USDT Wallet",
       "amount": "Amount",
       "accepted_by": "Accepted By",
-      "created": "Created"
+      "created": "Created",
+      "rate": "Rate"
     },
     "status_badge": {
-      "accepted": "ACCEPTED",
+      "accepted": "SUCCESS",
       "refused": "REFUSED",
       "pending": "PENDING",
       "in_progress": "IN PROGRESS"

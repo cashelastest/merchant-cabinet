@@ -79,6 +79,9 @@ async def create_deal(
 
     deal_user = None
     for user in users:
+        if user.is_banned:
+            print(f"[deal/create] Skipping banned user {user.id} ({user.username})", file=sys.stdout, flush=True)
+            continue
         user_currencies = {c.xml for c in user.currencies}
         print(f"[deal/create] User {user.id} ({user.username}) supports: {user_currencies}", file=sys.stdout, flush=True)
         if payout_xml in user_currencies:
@@ -95,8 +98,14 @@ async def create_deal(
     data_dict['user_id'] = deal_user.id
     deal_request = DealCreateRequest(**data_dict)
 
-    print(f"[deal/create] Creating deal for user {deal_user.id}, uid={data.uid}", file=sys.stdout, flush=True)
-    deal = await service.create(deal_request)
+    # The matched merchant's markup for this payout currency goes on top of the
+    # caller's rate. Both are snapshotted on the deal.
+    from decimal import Decimal
+    markup_percent = await user_repo.get_markup(deal_user.id, payout_xml)
+    our_rate = (data.rate * (Decimal(100) + markup_percent) / Decimal(100)).quantize(Decimal("0.00000001"))
+
+    print(f"[deal/create] Creating deal for user {deal_user.id}, uid={data.uid}, rate={data.rate}, markup={markup_percent}%, our_rate={our_rate}", file=sys.stdout, flush=True)
+    deal = await service.create(deal_request, markup_percent=markup_percent, our_rate=our_rate)
     print(f"[deal/create] Deal created: id={deal.id}, user_id={deal_user.id}", file=sys.stdout, flush=True)
 
     session.add(ApiKeyLog(
@@ -114,6 +123,9 @@ async def create_deal(
     deal_data["accepted_by"] = None
     deal_data["accepted_at"] = None
     deal_data["updated_at"] = None
+    # Merchants only ever see the rate with their markup applied.
+    deal_data.pop("rate", None)
+    deal_data["our_rate"] = float(our_rate)
 
     ws_message = json.dumps({
         "event": "new_deal",
@@ -169,7 +181,14 @@ async def complete_deal(
     try:
         deal = await service.complete(deal_id, user.id)
     except ValueError as e:
-        raise HTTPException(status_code=404 if str(e) == "not_found" else 409)
+        if str(e) == "not_found":
+            raise HTTPException(status_code=404, detail="Deal not found")
+        if str(e) == "no_rate":
+            raise HTTPException(
+                status_code=409,
+                detail="Deal has no rate, so the USDT amount for the balance can't be computed",
+            )
+        raise HTTPException(status_code=409)
     return {"id": deal.id, "status": deal.status}
 
 
@@ -182,6 +201,17 @@ async def update_deal_status(
 ):
     from sqlalchemy import select
     from models import Deal
+    from schemas import DealStatus
+
+    if status not in {s.value for s in DealStatus}:
+        raise HTTPException(status_code=422, detail=f"Unknown status '{status}'")
+    if status == DealStatus.ACCEPTED.value:
+        # Completing credits the balance in USDT and syncs Bizon. That happens in
+        # exactly one place, so this generic endpoint can't take a shortcut.
+        raise HTTPException(
+            status_code=400,
+            detail="Use POST /deal/{deal_id}/complete to complete a deal",
+        )
 
     stmt = select(Deal).where(Deal.id == deal_id)
     result = await session.execute(stmt)
@@ -190,30 +220,18 @@ async def update_deal_status(
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
 
+    if not user.is_admin and user.id not in (deal.user_id, deal.accepted_by):
+        raise HTTPException(status_code=403, detail="Access denied")
+
     if deal.status in ("accepted", "refused"):
         raise HTTPException(
             status_code=409,
             detail="Cannot change status of completed or refused deal",
         )
 
-    old_status = deal.status
     deal.status = status
-
-    if status == "accepted" and old_status != "accepted":
-        amount = deal.to_values.get("amount", 0) if deal.to_values else 0
-        user.balance += float(amount)
-        history = BalanceHistory(
-            user_id=user.id,
-            action="deal_accepted",
-            amount=float(amount),
-            reason=f"Deal #{deal.id} accepted ({deal.to_xml})",
-            created_at=datetime.now(),
-        )
-        session.add(history)
-
     await session.commit()
     await session.refresh(deal)
-    await session.refresh(user)
 
     return {"id": deal.id, "status": deal.status}
 
@@ -314,8 +332,15 @@ async def deals_ws(websocket: WebSocket, token: str = Query()) -> None:
         await websocket.close(code=1008, reason="Invalid token")
         return
 
+    if user.is_banned:
+        await websocket.accept()
+        await websocket.close(code=1008, reason="User is banned")
+        return
+
     xml_codes = {c.xml for c in user.currencies}
-    await manager.connect(websocket, xml_codes, is_active=user.is_active, is_admin=user.is_admin)
+    await manager.connect(
+        websocket, xml_codes, is_active=user.is_active, is_admin=user.is_admin, user_id=user.id
+    )
 
     try:
         while True:

@@ -30,10 +30,28 @@ async def _ensure_admin() -> None:
             await session.commit()
 
 
+# create_all only creates missing tables — it never adds a column to a table
+# that already exists. There is no migration tool in the project, so columns
+# added to existing tables are applied here; IF NOT EXISTS keeps it idempotent.
+_COLUMN_MIGRATIONS = [
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT false",
+    "ALTER TABLE deal ADD COLUMN IF NOT EXISTS rate NUMERIC(18, 8)",
+    "ALTER TABLE deal ADD COLUMN IF NOT EXISTS markup_percent NUMERIC(8, 4)",
+    "ALTER TABLE deal ADD COLUMN IF NOT EXISTS our_rate NUMERIC(20, 8)",
+    "ALTER TABLE deal ADD COLUMN IF NOT EXISTS turnover_usdt NUMERIC(20, 8)",
+    "ALTER TABLE deal ADD COLUMN IF NOT EXISTS credited_usdt NUMERIC(18, 2)",
+    "ALTER TABLE deal ADD COLUMN IF NOT EXISTS margin_usdt NUMERIC(20, 8)",
+]
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from sqlalchemy import text
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        for statement in _COLUMN_MIGRATIONS:
+            await conn.execute(text(statement))
     await _ensure_admin()
     asyncio.create_task(redis_service.listen())
     yield

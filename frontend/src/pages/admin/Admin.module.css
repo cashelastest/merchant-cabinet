@@ -402,3 +402,73 @@
   padding: 60px 0;
   font-size: 14px;
 }
+
+/* Text filter input (AdminDeals merchant search) — was referenced but missing */
+.filterInput {
+  padding: 8px 12px;
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 13px;
+  outline: none;
+  min-width: 180px;
+}
+
+.filterInput:focus {
+  border-color: #4a4a4a;
+}
+
+/* Cancel button in user edit mode — was referenced but missing */
+.resetBtn {
+  padding: 6px 12px;
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  color: #a0a0a0;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.resetBtn:hover {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.banBtn {
+  padding: 6px 12px;
+  background-color: #2d1a1a;
+  border: 1px solid #4d2626;
+  border-radius: 4px;
+  color: #f87171;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.banBtn:hover:not(:disabled) {
+  background-color: #3d2020;
+}
+
+.unbanBtn {
+  padding: 6px 12px;
+  background-color: #1a2d1a;
+  border: 1px solid #264d26;
+  border-radius: 4px;
+  color: #4ade80;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.unbanBtn:hover:not(:disabled) {
+  background-color: #1f3d1f;
+}
+
+.banBtn:disabled,
+.unbanBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -9,6 +9,7 @@ interface AdminDeal {
   id: number;
   uid: number;
   user_id: number;
+  user_username: string | null;
   from_xml: string;
   from_name: string;
   to_xml: string;
@@ -16,6 +17,18 @@ interface AdminDeal {
   to_values: Record<string, unknown>;
   receipt_url: string | null;
   status: string;
+  /** Rate as sent by the API caller: payout-currency units per 1 USDT */
+  rate: number | null;
+  /** Merchant's markup at the moment the deal was created */
+  markup_percent: number | null;
+  /** rate with the markup applied — what the merchant sees */
+  our_rate: number | null;
+  /** Filled on completion: payout valued at the caller's rate */
+  turnover_usdt: number | null;
+  /** Filled on completion: what was credited to the merchant's balance */
+  credited_usdt: number | null;
+  /** Filled on completion: turnover - credited */
+  margin_usdt: number | null;
   accepted_by: number | null;
   accepted_by_username: string | null;
   accepted_at: string | null;
@@ -33,6 +46,18 @@ function val(values: Record<string, unknown>, key: string): string {
   return v !== undefined && v !== null ? String(v) : '—';
 }
 
+function num(v: number | null | undefined): string {
+  return v === null || v === undefined ? '—' : String(v);
+}
+
+function money(n: number): string {
+  return n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function usdtCell(v: number | null | undefined): string {
+  return v === null || v === undefined ? '—' : money(v);
+}
+
 export default function AdminDeals() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -46,7 +71,7 @@ export default function AdminDeals() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [status, setStatus] = useState('');
-  const [userId, setUserId] = useState('');
+  const [merchant, setMerchant] = useState('');
 
   useEffect(() => {
     fetchDeals();
@@ -61,7 +86,7 @@ export default function AdminDeals() {
       if (dateFrom) params.set('date_from', dateFrom);
       if (dateTo) params.set('date_to', dateTo);
       if (status) params.set('status', status);
-      if (userId) params.set('user_id', userId);
+      if (merchant.trim()) params.set('username', merchant.trim());
       const data = await adminClient
         .get<AdminDeal[]>(`/admin/deals?${params}`)
         .then((r) => r.data);
@@ -72,6 +97,21 @@ export default function AdminDeals() {
       setLoading(false);
     }
   };
+
+  // Totals follow the current filters, so filtering by merchant or dates gives
+  // that merchant's / that period's turnover and margin. Only successful deals
+  // are settled, so only they count.
+  const totals = deals.reduce(
+    (acc, d) => {
+      if (d.status !== 'accepted') return acc;
+      acc.count += 1;
+      acc.turnover += d.turnover_usdt ?? 0;
+      acc.credited += d.credited_usdt ?? 0;
+      acc.margin += d.margin_usdt ?? 0;
+      return acc;
+    },
+    { count: 0, turnover: 0, credited: 0, margin: 0 },
+  );
 
   const closeReceipt = () => {
     setReceipt((prev) => {
@@ -105,6 +145,8 @@ export default function AdminDeals() {
     localStorage.removeItem('adminToken');
     navigate('/admin/login');
   };
+
+  const statusLabel = (s: string) => t(`deals.status_badge.${s}`, { defaultValue: s });
 
   return (
     <div className={styles.page}>
@@ -140,19 +182,16 @@ export default function AdminDeals() {
           onChange={(e) => setStatus(e.target.value)}
         >
           <option value="">{t('admin.payouts.filters.all_statuses')}</option>
-          <option value="pending">pending</option>
-          <option value="in_progress">in_progress</option>
-          <option value="accepted">accepted</option>
-          <option value="refused">refused</option>
+          {['pending', 'in_progress', 'accepted', 'refused'].map((s) => (
+            <option key={s} value={s}>{statusLabel(s)}</option>
+          ))}
         </select>
 
         <input
           className={styles.filterInput}
-          placeholder="User ID"
-          type="number"
-          min="1"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
+          placeholder="Мерчант (имя)"
+          value={merchant}
+          onChange={(e) => setMerchant(e.target.value)}
         />
 
         <button type="submit" className={styles.saveBtn}>
@@ -162,6 +201,10 @@ export default function AdminDeals() {
 
       <div className={styles.summary}>
         <span>Deals: <strong>{deals.length}</strong></span>
+        <span>Успешных: <strong>{totals.count}</strong></span>
+        <span>Оборот: <strong>{money(totals.turnover)} USDT</strong></span>
+        <span>Маржа: <strong>{money(totals.margin)} USDT</strong></span>
+        <span>Зачислено мерчантам: <strong>{money(totals.credited)} USDT</strong></span>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
@@ -181,10 +224,16 @@ export default function AdminDeals() {
                 <th>Status</th>
                 <th>Payout currency</th>
                 <th>Amount</th>
+                <th>Source rate</th>
+                <th>Markup</th>
+                <th>Our rate</th>
+                <th>Оборот, USDT</th>
+                <th>Маржа, USDT</th>
+                <th>Зачислено, USDT</th>
                 <th>Card Holder</th>
                 <th>Card Number</th>
                 <th>Bank</th>
-                <th>Created</th>
+                <th>Received</th>
                 <th>Accepted by</th>
                 <th>Receipt</th>
               </tr>
@@ -194,14 +243,22 @@ export default function AdminDeals() {
                 <tr key={d.id}>
                   <td>#{d.id}</td>
                   <td>{d.uid}</td>
-                  <td>{d.user_id}</td>
-                  <td>{d.status}</td>
+                  <td>
+                    {d.user_username ?? `#${d.user_id}`}
+                  </td>
+                  <td>{statusLabel(d.status)}</td>
                   <td>{d.to_xml}</td>
                   <td>{val(d.to_values, 'outAmount')}</td>
+                  <td>{num(d.rate)}</td>
+                  <td>{d.markup_percent === null ? '—' : `${d.markup_percent}%`}</td>
+                  <td style={{ fontWeight: 600 }}>{num(d.our_rate)}</td>
+                  <td>{usdtCell(d.turnover_usdt)}</td>
+                  <td style={{ color: '#fbbf24' }}>{usdtCell(d.margin_usdt)}</td>
+                  <td style={{ fontWeight: 600 }}>{usdtCell(d.credited_usdt)}</td>
                   <td>{val(d.to_values, 'cardHolder')}</td>
                   <td>{val(d.to_values, 'cardNumber')}</td>
                   <td>{val(d.to_values, 'bankName')}</td>
-                  <td>{fmt(d.created_at)}</td>
+                  <td>{fmt(d.received_at ?? d.created_at)}</td>
                   <td>{d.accepted_by_username ?? '—'}</td>
                   <td>
                     {d.receipt_url ? (

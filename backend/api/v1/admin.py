@@ -16,6 +16,10 @@ from schemas import CreateUserRequest
 from models import User, Deal, ApiKeyLog, Payout, BalanceHistory
 
 
+from decimal import Decimal
+from pydantic import field_validator
+
+
 class CurrenciesUpdate(BaseModel):
     currencies: list[str]
 
@@ -24,7 +28,27 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
     is_active: Optional[bool] = None
+    is_banned: Optional[bool] = None
     currencies: Optional[list[str]] = None
+
+
+class MarkupsUpdate(BaseModel):
+    # {"UAH": 2.5, "USDT": 0} — percent added on top of the API caller's rate
+    markups: dict[str, Decimal]
+
+    @field_validator("markups")
+    @classmethod
+    def markups_valid(cls, v: dict[str, Decimal]) -> dict[str, Decimal]:
+        cleaned: dict[str, Decimal] = {}
+        for xml, percent in v.items():
+            code = xml.strip().upper()
+            if not code:
+                raise ValueError("Currency code must not be empty")
+            # At -100% or below the resulting rate would be zero or negative.
+            if not (Decimal("-100") < percent <= Decimal("1000")):
+                raise ValueError(f"Markup for {code} must be above -100 and at most 1000")
+            cleaned[code] = percent.quantize(Decimal("0.0001"))
+        return cleaned
 
 
 router = APIRouter(prefix="/admin")
@@ -36,13 +60,16 @@ async def list_users(
     service: UserService = Depends(get_user_service),
 ):
     users = await service.repository.get_all()
+    markups = await service.repository.get_markups([u.id for u in users])
     return [
         {
             "id": u.id,
             "username": u.username,
             "is_active": u.is_active,
             "is_admin": u.is_admin,
+            "is_banned": u.is_banned,
             "currencies": [c.xml for c in u.currencies],
+            "markups": {xml: float(p) for xml, p in markups.get(u.id, {}).items()},
         }
         for u in users
     ]
@@ -138,17 +165,46 @@ async def update_user(
         user.hashed_password = hashed
     if data.is_active is not None:
         user.is_active = data.is_active
+    banned_now = False
+    if data.is_banned is not None:
+        if data.is_banned and user.is_admin:
+            # An admin banning an admin could lock everyone out of the panel.
+            raise HTTPException(status_code=400, detail="Admin accounts cannot be banned")
+        banned_now = data.is_banned and not user.is_banned
+        user.is_banned = data.is_banned
     if data.currencies is not None:
         await service.update_currencies(user, data.currencies)
     else:
         await service.repository.session.commit()
         await service.repository.session.refresh(user)
+    if banned_now:
+        # Drop live sockets so the merchant stops receiving deals right away,
+        # not only after the next reconnect.
+        from core.ws_manager import manager
+        await manager.disconnect_user(user.id)
     return {
         "id": user.id,
         "username": user.username,
         "is_active": user.is_active,
+        "is_banned": user.is_banned,
         "currencies": [c.xml for c in user.currencies],
     }
+
+
+@router.put("/users/{user_id}/markups")
+async def set_user_markups(
+    user_id: int,
+    data: MarkupsUpdate,
+    _: User = Depends(require_admin),
+    service: UserService = Depends(get_user_service),
+):
+    """Replaces the user's whole markup set; currencies left out get no markup."""
+    user = await service.repository.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await service.repository.replace_markups(user_id, data.markups)
+    await service.repository.session.commit()
+    return {"id": user_id, "markups": {xml: float(p) for xml, p in data.markups.items()}}
 
 
 @router.delete("/users/{user_id}")
@@ -169,27 +225,46 @@ async def delete_user(
 async def list_deals_admin(
     _: User = Depends(require_admin),
     user_id: Optional[int] = Query(None),
+    username: Optional[str] = Query(None),
     today: bool = Query(False),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
-    query = select(Deal).order_by(Deal.created_at.desc())
+    from sqlalchemy import func
+
+    # Dates are taken from when the cabinet received a deal: created_at is set
+    # by the API caller and can hold any date. Rows without received_at fall
+    # back to created_at.
+    deal_time = func.coalesce(Deal.received_at, Deal.created_at)
+    query = select(Deal).order_by(deal_time.desc())
 
     if user_id:
         query = query.where(Deal.user_id == user_id)
 
+    if username and username.strip():
+        # Escape LIKE wildcards so "_" or "%" typed in the search match literally.
+        pattern = (
+            username.strip()
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        )
+        query = query.join(User, User.id == Deal.user_id).where(
+            User.username.ilike(f"%{pattern}%", escape="\\")
+        )
+
     if today:
         today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        query = query.where(Deal.created_at >= today_start)
+        query = query.where(deal_time >= today_start)
     else:
         if date_from:
             start_date = datetime.fromisoformat(date_from)
-            query = query.where(Deal.created_at >= start_date)
+            query = query.where(deal_time >= start_date)
         if date_to:
             end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
-            query = query.where(Deal.created_at < end_date)
+            query = query.where(deal_time < end_date)
 
     if status:
         query = query.where(Deal.status == status)
@@ -197,15 +272,22 @@ async def list_deals_admin(
     result = await session.execute(query)
     deals = result.scalars().all()
 
-    from repositories.user import UserRepository
-    user_repo = UserRepository(session)
+    # One query for every username the page needs instead of one per row.
+    user_ids = {d.user_id for d in deals} | {d.accepted_by for d in deals if d.accepted_by}
+    usernames: dict[int, str] = {}
+    if user_ids:
+        rows = await session.execute(select(User.id, User.username).where(User.id.in_(user_ids)))
+        usernames = dict(rows.all())
 
-    response = []
-    for deal in deals:
-        deal_dict = {
+    def num(value):
+        return float(value) if value is not None else None
+
+    return [
+        {
             "id": deal.id,
             "uid": deal.uid,
             "user_id": deal.user_id,
+            "user_username": usernames.get(deal.user_id),
             "from_xml": deal.from_xml,
             "from_name": deal.from_name,
             # to_xml is the payout currency — the one merchants are matched by
@@ -214,19 +296,20 @@ async def list_deals_admin(
             "to_values": deal.to_values,
             "receipt_url": deal.receipt_url,
             "status": deal.status,
+            "rate": num(deal.rate),
+            "markup_percent": num(deal.markup_percent),
+            "our_rate": num(deal.our_rate),
+            "turnover_usdt": num(deal.turnover_usdt),
+            "credited_usdt": num(deal.credited_usdt),
+            "margin_usdt": num(deal.margin_usdt),
             "accepted_by": deal.accepted_by,
-            "accepted_by_username": None,
+            "accepted_by_username": usernames.get(deal.accepted_by) if deal.accepted_by else None,
             "accepted_at": deal.accepted_at.isoformat() if deal.accepted_at else None,
             "received_at": deal.received_at.isoformat() if deal.received_at else None,
             "created_at": deal.created_at.isoformat() if deal.created_at else None,
         }
-        if deal.accepted_by:
-            accepted_user = await user_repo.get_by_id(deal.accepted_by)
-            if accepted_user:
-                deal_dict["accepted_by_username"] = accepted_user.username
-        response.append(deal_dict)
-
-    return response
+        for deal in deals
+    ]
 
 
 @router.post("/deals/{deal_id}/receipt")
@@ -444,6 +527,14 @@ async def list_user_deals(
             "status": deal.status,
             "accepted_by": deal.accepted_by,
             "receipt_url": deal.receipt_url,
+            "rate": float(deal.rate) if deal.rate is not None else None,
+            "markup_percent": float(deal.markup_percent) if deal.markup_percent is not None else None,
+            "our_rate": float(deal.our_rate) if deal.our_rate is not None else None,
+            "turnover_usdt": float(deal.turnover_usdt) if deal.turnover_usdt is not None else None,
+            "credited_usdt": float(deal.credited_usdt) if deal.credited_usdt is not None else None,
+            "margin_usdt": float(deal.margin_usdt) if deal.margin_usdt is not None else None,
+            # The history page groups by day on this: created_at is caller-supplied.
+            "received_at": deal.received_at.isoformat() if deal.received_at else None,
             "created_at": deal.created_at.isoformat() if deal.created_at else None,
         }
         response.append(deal_dict)

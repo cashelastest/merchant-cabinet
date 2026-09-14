@@ -1,7 +1,9 @@
-from sqlalchemy import select
+from decimal import Decimal
+from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
 from models import User
 from models.currency import Currency
+from models.user_currency_markup import UserCurrencyMarkup
 from .base import BaseRepository
 from typing import List
 
@@ -58,3 +60,37 @@ class UserRepository(BaseRepository[User]):
         user.currencies = currencies
         await self.session.flush()
         return user
+
+    async def get_markup(self, user_id: int, currency_xml: str) -> Decimal:
+        """Markup percent for one merchant and payout currency; 0 when unset."""
+        result = await self.session.execute(
+            select(UserCurrencyMarkup.percent).where(
+                UserCurrencyMarkup.user_id == user_id,
+                UserCurrencyMarkup.currency_xml == currency_xml,
+            )
+        )
+        percent = result.scalar_one_or_none()
+        return percent if percent is not None else Decimal("0")
+
+    async def get_markups(self, user_ids: list[int]) -> dict[int, dict[str, Decimal]]:
+        """Markups of many users in one query: {user_id: {currency_xml: percent}}."""
+        if not user_ids:
+            return {}
+        result = await self.session.execute(
+            select(UserCurrencyMarkup).where(UserCurrencyMarkup.user_id.in_(user_ids))
+        )
+        markups: dict[int, dict[str, Decimal]] = {}
+        for m in result.scalars().all():
+            markups.setdefault(m.user_id, {})[m.currency_xml] = m.percent
+        return markups
+
+    async def replace_markups(self, user_id: int, markups: dict[str, Decimal]) -> None:
+        """Replaces the user's whole markup set with the given one."""
+        await self.session.execute(
+            delete(UserCurrencyMarkup).where(UserCurrencyMarkup.user_id == user_id)
+        )
+        for currency_xml, percent in markups.items():
+            self.session.add(
+                UserCurrencyMarkup(user_id=user_id, currency_xml=currency_xml, percent=percent)
+            )
+        await self.session.flush()

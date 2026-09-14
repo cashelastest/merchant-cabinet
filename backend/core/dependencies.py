@@ -40,6 +40,15 @@ def _decode_token(token: str) -> int:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
+def _reject_banned(user: User) -> User:
+    # 401 rather than 403 on purpose: both frontend clients drop the stored token
+    # and send the user to the login page on 401, so a banned session ends at
+    # once instead of lingering with every request failing. Login answers 403.
+    if user.is_banned:
+        raise HTTPException(status_code=401, detail="User is banned")
+    return user
+
+
 async def get_current_user(
     authorization: str = Header(),
     session: AsyncSession = Depends(get_session),
@@ -48,7 +57,7 @@ async def get_current_user(
     user = await UserRepository(session).get_with_currencies(user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
-    return user
+    return _reject_banned(user)
 
 
 async def require_admin(user: User = Depends(get_current_user)) -> User:
@@ -65,7 +74,7 @@ async def get_current_user_ws(
     user = await UserRepository(session).get_with_currencies(user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
-    return user
+    return _reject_banned(user)
 
 
 async def get_user_by_api_key(
@@ -79,7 +88,7 @@ async def get_user_by_api_key(
     user = await repo.get_by_api_key(x_api_key)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid API key")
-    return user
+    return _reject_banned(user)
 
 
 async def get_current_user_or_by_api_key(
@@ -92,18 +101,21 @@ async def get_current_user_or_by_api_key(
     if x_api_key:
         user = await repo.get_by_api_key(x_api_key)
         if user:
-            return user
+            return _reject_banned(user)
         raise HTTPException(status_code=401, detail="Invalid API key")
 
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing authorization or X-API-Key header")
 
+    user = None
     try:
         user_id = _decode_token(authorization)
         user = await repo.get_with_currencies(user_id)
-        if user:
-            return user
     except HTTPException:
         pass
 
+    # Checked outside the try: inside it the ban error would be swallowed and
+    # reported as plain "Invalid credentials".
+    if user:
+        return _reject_banned(user)
     raise HTTPException(status_code=401, detail="Invalid credentials")

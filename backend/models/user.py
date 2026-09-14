@@ -19,6 +19,9 @@ class User(Base):
     balance: Mapped[Decimal] = mapped_column(Numeric(18, 2), server_default="0")
     is_active: Mapped[bool] = mapped_column(server_default="false")
     is_admin: Mapped[bool] = mapped_column(server_default="false")
+    # Set by an admin. Unlike is_active (the merchant's own pause switch), a ban
+    # blocks login, the API key, websockets and deal assignment.
+    is_banned: Mapped[bool] = mapped_column(server_default="false")
     totp_secret: Mapped[Optional[str]] = mapped_column(nullable=True)
 
     currencies: Mapped[List['Currency']] = relationship(

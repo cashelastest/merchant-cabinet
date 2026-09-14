@@ -18,6 +18,7 @@ const CURL_EXAMPLE = `curl -X POST ${BASE_URL}/deal/ \\
     "outAmount": 15750.50
   },
   "to_xml": "UAH",
+  "rate": 41.25,
   "status": "pending",
   "created_at": "2026-09-10T10:30:00"
 }'`;
@@ -173,6 +174,15 @@ export default function DocsPage() {
                   <td>
                     <strong>Валюта выплаты.</strong> По ней подбирается мерчант — значение
                     должно совпадать с валютой в его настройках. Например <code>UAH</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>rate</code><span className={styles.required}>required</span></td>
+                  <td className={styles.type}>number</td>
+                  <td>
+                    Курс: сколько единиц валюты выплаты <code>to_xml</code> даётся за 1 USDT.
+                    Например, при выплате в гривне — <code>41.25</code>, при выплате в USDT — <code>1</code>.
+                    Больше нуля; хранится с точностью до 8 знаков после запятой, лишние знаки округляются.
                   </td>
                 </tr>
                 <tr>
@@ -337,7 +347,8 @@ export default function DocsPage() {
               <td><code>422</code></td>
               <td>
                 Ошибка валидации: отсутствует обязательное поле, неверный тип,
-                недопустимый <code>status</code> или неразобранный <code>created_at</code>.
+                недопустимый <code>status</code>, <code>rate</code> не больше нуля
+                или неразобранный <code>created_at</code>.
               </td>
             </tr>
           </tbody>

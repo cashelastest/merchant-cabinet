@@ -36,10 +36,11 @@
       "wallet": "USDT кошелёк",
       "amount": "Сумма",
       "accepted_by": "Принял пользователь",
-      "created": "Создана"
+      "created": "Создана",
+      "rate": "Курс"
     },
     "status_badge": {
-      "accepted": "ПРИНЯТА",
+      "accepted": "УСПЕШНО",
       "refused": "ОТКЛОНЕНА",
       "pending": "ОЖИДАНИЕ",
       "in_progress": "В ОБРАБОТКЕ"

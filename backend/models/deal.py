@@ -2,9 +2,10 @@
 
 from .base import Base
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Numeric
 from sqlalchemy.dialects.postgresql import JSONB
 from typing import Optional
+from decimal import Decimal
 from datetime import datetime
 
 
@@ -31,4 +32,18 @@ class Deal(Base):
     updated_at: Mapped[Optional[datetime]]
     receipt_url: Mapped[Optional[str]] = mapped_column(nullable=True)
 
+    # Exchange rate as sent by the API caller: payout-currency units per 1 USDT.
+    rate: Mapped[Optional[Decimal]] = mapped_column(Numeric(18, 8), nullable=True)
+    # The merchant's markup for to_xml at creation time, and the rate with it
+    # applied. Stored rather than computed on read, so changing a markup later
+    # does not rewrite the rate of deals that have already happened.
+    markup_percent: Mapped[Optional[Decimal]] = mapped_column(Numeric(8, 4), nullable=True)
+    our_rate: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 8), nullable=True)
 
+    # USDT settlement, filled in when the payout is completed:
+    #   turnover = outAmount / rate      the payout valued at the caller's rate
+    #   credited = outAmount / our_rate  what lands on the merchant's balance
+    #   margin   = turnover - credited
+    turnover_usdt: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 8), nullable=True)
+    credited_usdt: Mapped[Optional[Decimal]] = mapped_column(Numeric(18, 2), nullable=True)
+    margin_usdt: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 8), nullable=True)
