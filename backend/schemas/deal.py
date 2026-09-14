@@ -12,12 +12,12 @@ class DealCreateRequest(BaseModel):
     bizon_id: Optional[str] = None
     secret: str
     to_values: Dict
-    from_xml: str
-    from_name: str
-    from_image_url: str
+    from_xml: str = ""
+    from_name: str = ""
+    from_image_url: str = ""
     to_xml: str
-    to_name: str
-    to_image_xml: str
+    to_name: str = ""
+    to_image_xml: str = ""
     status: str
     created_at: datetime
     user_id: Optional[int] = None
