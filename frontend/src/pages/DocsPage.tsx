@@ -9,7 +9,6 @@ const CURL_EXAMPLE = `curl -X POST ${BASE_URL}/deal/ \\
   -H "Content-Type: application/json" \\
   -d '{
   "uid": 100234,
-  "bizon_id": null,
   "secret": "your-secret-key",
   "to_values": {
     "cardHolder": "OLEKSANDR KOVALENKO",
@@ -18,12 +17,7 @@ const CURL_EXAMPLE = `curl -X POST ${BASE_URL}/deal/ \\
     "bankName": "PrivatBank",
     "outAmount": 15750.50
   },
-  "from_xml": "USDT",
-  "from_name": "USDT Tether",
-  "from_image_url": "https://example.com/usdt.png",
   "to_xml": "UAH",
-  "to_name": "Ukrainian Hryvnia",
-  "to_image_xml": "https://example.com/uah.png",
   "status": "pending",
   "created_at": "2026-09-10T10:30:00"
 }'`;
@@ -174,37 +168,12 @@ export default function DocsPage() {
                   <td>Реквизиты получателя и сумма выплаты. Состав — в таблице ниже.</td>
                 </tr>
                 <tr>
-                  <td><code>from_xml</code><span className={styles.required}>required</span></td>
-                  <td className={styles.type}>string</td>
-                  <td>Код валюты, которой платит клиент. Например <code>USDT</code>. На подбор мерчанта не влияет.</td>
-                </tr>
-                <tr>
-                  <td><code>from_name</code><span className={styles.required}>required</span></td>
-                  <td className={styles.type}>string</td>
-                  <td>Название валюты источника.</td>
-                </tr>
-                <tr>
-                  <td><code>from_image_url</code><span className={styles.required}>required</span></td>
-                  <td className={styles.type}>string</td>
-                  <td>Ссылка на иконку валюты источника.</td>
-                </tr>
-                <tr>
                   <td><code>to_xml</code><span className={styles.required}>required</span></td>
                   <td className={styles.type}>string</td>
                   <td>
                     <strong>Валюта выплаты.</strong> По ней подбирается мерчант — значение
                     должно совпадать с валютой в его настройках. Например <code>UAH</code>.
                   </td>
-                </tr>
-                <tr>
-                  <td><code>to_name</code><span className={styles.required}>required</span></td>
-                  <td className={styles.type}>string</td>
-                  <td>Название валюты выплаты.</td>
-                </tr>
-                <tr>
-                  <td><code>to_image_xml</code><span className={styles.required}>required</span></td>
-                  <td className={styles.type}>string</td>
-                  <td>Ссылка на иконку валюты выплаты.</td>
                 </tr>
                 <tr>
                   <td><code>status</code><span className={styles.required}>required</span></td>
@@ -220,14 +189,6 @@ export default function DocsPage() {
                   <td>
                     Время создания в ISO 8601 без таймзоны: <code>YYYY-MM-DDTHH:MM:SS</code>.
                     Трактуется как UTC.
-                  </td>
-                </tr>
-                <tr>
-                  <td><code>bizon_id</code><span className={styles.optional}>optional</span></td>
-                  <td className={styles.type}>string | null</td>
-                  <td>
-                    Идентификатор ордера в Bizon. Если задан, смена статуса заявки
-                    дополнительно синхронизируется с Bizon API.
                   </td>
                 </tr>
                 <tr>
@@ -306,8 +267,7 @@ export default function DocsPage() {
         <h2 id="routing">Подбор мерчанта</h2>
         <p>
           Кабинет работает на выплату, поэтому заявка адресуется по валюте, которую
-          мерчант выплачивает, — по полю <code>to_xml</code>. Поле <code>from_xml</code>
-          хранится вместе с заявкой, но на выбор мерчанта не влияет.
+          мерчант выплачивает, — по полю <code>to_xml</code>.
         </p>
         <p>
           Сервер перебирает мерчантов по возрастанию их ID и отдаёт заявку первому,
