@@ -19,9 +19,9 @@ interface AdminDeal {
   status: string;
   /** Rate as sent by the API caller: payout-currency units per 1 USDT */
   rate: number | null;
-  /** Merchant's markup at the moment the deal was created */
+  /** Markup of the merchant who took the deal, fixed when they took it */
   markup_percent: number | null;
-  /** rate with the markup applied — what the merchant sees */
+  /** rate with that markup applied — what the merchant saw */
   our_rate: number | null;
   /** Filled on completion: payout valued at the caller's rate */
   turnover_usdt: number | null;
@@ -234,7 +234,6 @@ export default function AdminDeals() {
                 <th>Card Number</th>
                 <th>Bank</th>
                 <th>Received</th>
-                <th>Accepted by</th>
                 <th>Receipt</th>
               </tr>
             </thead>
@@ -244,7 +243,12 @@ export default function AdminDeals() {
                   <td>#{d.id}</td>
                   <td>{d.uid}</td>
                   <td>
-                    {d.user_username ?? `#${d.user_id}`}
+                    {/* The merchant is whoever took the deal; until then it sits in the shared pool. */}
+                    {d.accepted_by_username ?? (
+                      d.status === 'pending'
+                        ? <span style={{ color: '#888' }}>в пуле</span>
+                        : '—'
+                    )}
                   </td>
                   <td>{statusLabel(d.status)}</td>
                   <td>{d.to_xml}</td>
@@ -259,7 +263,6 @@ export default function AdminDeals() {
                   <td>{val(d.to_values, 'cardNumber')}</td>
                   <td>{val(d.to_values, 'bankName')}</td>
                   <td>{fmt(d.received_at ?? d.created_at)}</td>
-                  <td>{d.accepted_by_username ?? '—'}</td>
                   <td>
                     {d.receipt_url ? (
                       <button

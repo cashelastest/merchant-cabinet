@@ -80,5 +80,8 @@ class DealResponse(BaseModel):
     # Merchants only get the rate with their markup applied; the caller's rate
     # and the markup itself stay on the admin side.
     our_rate: Optional[float] = None
+    # What the deal credited to the merchant's balance. Safe to expose: it is
+    # outAmount / our_rate, and the merchant already sees both.
+    credited_usdt: Optional[float] = None
 
     model_config = {"from_attributes": True}

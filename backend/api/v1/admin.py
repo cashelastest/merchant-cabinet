@@ -251,7 +251,9 @@ async def list_deals_admin(
             .replace("%", "\\%")
             .replace("_", "\\_")
         )
-        query = query.join(User, User.id == Deal.user_id).where(
+        # The merchant of a deal is whoever took it: in the shared pool user_id is
+        # only the first eligible merchant at creation time.
+        query = query.join(User, User.id == Deal.accepted_by).where(
             User.username.ilike(f"%{pattern}%", escape="\\")
         )
 
@@ -508,16 +510,13 @@ async def list_user_deals(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ):
-    query = select(Deal).where(Deal.user_id == user_id).order_by(Deal.created_at.desc())
-    result = await session.execute(query)
-    deals = result.scalars().all()
+    from models import DealRefusal
 
-    from repositories.user import UserRepository
-    user_repo = UserRepository(session)
+    def num(value):
+        return float(value) if value is not None else None
 
-    response = []
-    for deal in deals:
-        deal_dict = {
+    def as_row(deal, **override):
+        row = {
             "id": deal.id,
             "uid": deal.uid,
             "user_id": deal.user_id,
@@ -527,19 +526,49 @@ async def list_user_deals(
             "status": deal.status,
             "accepted_by": deal.accepted_by,
             "receipt_url": deal.receipt_url,
-            "rate": float(deal.rate) if deal.rate is not None else None,
-            "markup_percent": float(deal.markup_percent) if deal.markup_percent is not None else None,
-            "our_rate": float(deal.our_rate) if deal.our_rate is not None else None,
-            "turnover_usdt": float(deal.turnover_usdt) if deal.turnover_usdt is not None else None,
-            "credited_usdt": float(deal.credited_usdt) if deal.credited_usdt is not None else None,
-            "margin_usdt": float(deal.margin_usdt) if deal.margin_usdt is not None else None,
-            # The history page groups by day on this: created_at is caller-supplied.
+            "rate": num(deal.rate),
+            "markup_percent": num(deal.markup_percent),
+            "our_rate": num(deal.our_rate),
+            "turnover_usdt": num(deal.turnover_usdt),
+            "credited_usdt": num(deal.credited_usdt),
+            "margin_usdt": num(deal.margin_usdt),
+            # The history page puts a deal on the day it was finished (updated_at),
+            # falling back to arrival for deals that are still open.
+            "updated_at": deal.updated_at.isoformat() if deal.updated_at else None,
             "received_at": deal.received_at.isoformat() if deal.received_at else None,
             "created_at": deal.created_at.isoformat() if deal.created_at else None,
         }
-        response.append(deal_dict)
+        row.update(override)
+        return row
 
-    return response
+    # A merchant's deals are the ones they took. In the shared pool user_id only
+    # records the first eligible merchant at creation time.
+    result = await session.execute(select(Deal).where(Deal.accepted_by == user_id))
+    rows = {deal.id: as_row(deal) for deal in result.scalars().all()}
+
+    # Plus the deals they refused. A refusal only hides a deal from this merchant,
+    # so it is shown as refused from their side, without anything another
+    # merchant did with the deal afterwards.
+    refusals = await session.execute(
+        select(Deal, DealRefusal.created_at)
+        .join(DealRefusal, DealRefusal.deal_id == Deal.id)
+        .where(DealRefusal.user_id == user_id)
+    )
+    for deal, refused_at in refusals.all():
+        rows[deal.id] = as_row(
+            deal,
+            status="refused",
+            accepted_by=None,
+            receipt_url=None,
+            markup_percent=None,
+            our_rate=None,
+            turnover_usdt=None,
+            credited_usdt=None,
+            margin_usdt=None,
+            updated_at=refused_at.isoformat(),
+        )
+
+    return list(rows.values())
 
 
 @router.post("/payouts/{payout_id}/receipt")

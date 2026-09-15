@@ -73,7 +73,41 @@
     "status_label": {
       "accepted": "ВЫПОЛНЕНА",
       "refused": "ОТКЛОНЕНА"
-    }
+    },
+    "tabs": {
+      "deals": "Заявки",
+      "balance": "История баланса"
+    },
+    "totals": {
+      "all_time": "Итого за всё время",
+      "count": "Заявок",
+      "success": "Успешно",
+      "refused": "Отклонено",
+      "paid_out": "Выплачено",
+      "credited": "Зачислено"
+    },
+    "day_table": {
+      "time": "Время",
+      "amount": "Сумма",
+      "rate": "Курс",
+      "credited": "Зачислено, USDT",
+      "recipient": "Получатель",
+      "bank": "Банк",
+      "status": "Статус"
+    },
+    "balance": {
+      "date": "Дата",
+      "operation": "Операция",
+      "amount": "Сумма, USDT",
+      "details": "Детали"
+    },
+    "actions": {
+      "deal_accepted": "Зачисление по заявке",
+      "reset": "Обнуление администратором",
+      "payout_completed": "Выплата"
+    },
+    "no_date": "Без даты",
+    "load_error": "Не удалось загрузить историю"
   },
   "admin": {
     "users": {

@@ -1,0 +1,111 @@
+.content {
+  padding: 16px 20px 32px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab,
+.tabActive {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid #2a2a2a;
+  background-color: #1a1a1a;
+  color: #a0a0a0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: #e0e0e0;
+  border-color: #4a4a4a;
+}
+
+.tabActive {
+  background-color: #1a3a60;
+  border-color: #2563eb;
+  color: #60a5fa;
+}
+
+/* All-time summary */
+.summary {
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  background-color: #0f170f;
+  border: 1px solid #1f3a1f;
+  border-radius: 6px;
+}
+
+.summaryTitle {
+  color: #e0e0e0;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 12px;
+  color: #808080;
+}
+
+.totals b {
+  color: #d4d4d4;
+  font-weight: 600;
+}
+
+/* Two classes so these win over ".totals b" */
+.totals .positive,
+.positive {
+  color: #4ade80;
+}
+
+.totals .negative,
+.negative {
+  color: #f87171;
+}
+
+/* Day sections */
+.day {
+  margin-bottom: 24px;
+  border: 1px solid #1a1a1a;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.dayHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  background-color: #141414;
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.dayTitle {
+  color: #e0e0e0;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* Balance table */
+.signed {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.details {
+  color: #a0a0a0;
+  font-size: 12px;
+  min-width: 240px;
+  white-space: normal;
+}

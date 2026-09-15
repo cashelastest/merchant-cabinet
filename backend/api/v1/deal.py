@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query, UploadFile, File
 from typing import Optional
+from decimal import Decimal
 import json
 import os
 from pathlib import Path
@@ -9,7 +10,7 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.ws_manager import manager
 from core.dependencies import get_current_user, get_deal_service, redis_service, get_session, _decode_token, SessionLocal, get_user_by_api_key
-from services.deal import DealService
+from services.deal import DealService, apply_markup
 from models import User, BalanceHistory, Deal, ApiKeyLog
 from schemas import DealCreateRequest, DealResponse
 from repositories.user import UserRepository
@@ -25,6 +26,38 @@ ALLOWED_RECEIPT_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp"}
 MAX_RECEIPT_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
+_DEAL_ERRORS = {
+    "not_found": (404, "Deal not found"),
+    "already_accepted": (409, "The deal has already been taken or closed"),
+    "not_allowed": (403, "This deal is not available to you"),
+    "user_not_found": (403, "User not found"),
+    "no_rate": (409, "Deal has no rate, so the USDT amount for the balance can't be computed"),
+    "has_receipt": (409, "A receipt is already attached, so the deal can't be handed back"),
+}
+
+
+def _deal_error(e: ValueError) -> HTTPException:
+    status_code, detail = _DEAL_ERRORS.get(str(e), (409, str(e)))
+    return HTTPException(status_code=status_code, detail=detail)
+
+
+async def _announce(deal: Deal) -> None:
+    """Tells every merchant who can see this deal that it changed.
+
+    Deals sit in a shared pool, so once one merchant takes, hands back or closes
+    a deal, everyone else's list has to follow right away, not on a reload.
+    """
+    await manager.broadcast_to_matching(
+        json.dumps({
+            "event": "deal_updated",
+            "deal_id": deal.id,
+            "status": deal.status,
+            "accepted_by": deal.accepted_by,
+        }),
+        deal.to_xml,
+    )
+
+
 @router.get("/deals", response_model=list[DealResponse])
 async def list_deals(
     deal_id: Optional[int] = None,
@@ -36,18 +69,63 @@ async def list_deals(
 ):
     deals = await service.list_deals(user, deal_id, status, to_xml)
     user_repo = UserRepository(session)
+    # Pool deals nobody has taken yet are shown at this merchant's own rate: every
+    # merchant has their own markup, and it is fixed only when a deal is taken.
+    my_markups = (await user_repo.get_markups([user.id])).get(user.id, {})
     result = []
     for deal in deals:
         deal_dict = {
             **deal.__dict__,
             "accepted_by_username": None,
         }
+        if deal.status == "pending" and deal.accepted_by is None:
+            deal_dict["our_rate"] = apply_markup(deal.rate, my_markups.get(deal.to_xml, Decimal(0)))
         if deal.accepted_by:
             accepted_user = await user_repo.get_by_id(deal.accepted_by)
             if accepted_user:
                 deal_dict["accepted_by_username"] = accepted_user.username
         result.append(DealResponse(**deal_dict))
     return result
+
+
+@router.get("/deals/history", response_model=list[DealResponse])
+async def deals_history(
+    service: DealService = Depends(get_deal_service),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """What this merchant did with deals, newest first.
+
+    Completed deals are the ones they took and finished — these match their
+    balance. Refused deals are the ones they turned down; a refusal only hides a
+    deal from them, so it is shown from their side and nothing another merchant
+    did with the deal afterwards is exposed.
+    """
+    from sqlalchemy import select
+
+    entries: dict[int, tuple[datetime, dict]] = {}
+
+    result = await session.execute(
+        select(Deal).where(Deal.accepted_by == user.id, Deal.status.in_(("accepted", "refused")))
+    )
+    for deal in result.scalars().all():
+        finished = deal.updated_at or deal.accepted_at or deal.received_at or deal.created_at
+        entries[deal.id] = (finished, dict(deal.__dict__))
+
+    for deal, refused_at in await service.repository.refusals_by(user.id):
+        entries[deal.id] = (refused_at, {
+            **deal.__dict__,
+            "status": "refused",
+            "updated_at": refused_at,
+            "accepted_by": None,
+            "accepted_at": None,
+            "our_rate": None,
+            "credited_usdt": None,
+            "receipt_url": None,
+        })
+
+    ordered = sorted(entries.values(), key=lambda entry: entry[0], reverse=True)
+    return [DealResponse(**data) for _, data in ordered]
 
 
 @router.post("/deal/")
@@ -59,54 +137,41 @@ async def create_deal(
 ):
     """Creates a payout request.
 
-    Requires a valid X-API-Key. The key only authenticates the caller — which
-    merchant executes the payout is still decided by to_xml, so the caller does
-    not have to hold the key of the merchant that ends up with the request.
+    Requires a valid X-API-Key. The key only authenticates the caller. The new
+    deal goes into a shared pool: every merchant paying out in to_xml sees it,
+    and whoever takes it first executes the payout.
     """
     import sys
     from repositories.user import UserRepository
 
     print(f"[deal/create] Incoming deal: uid={data.uid}, from_xml={data.from_xml}, to_xml={data.to_xml}, caller={caller.username}", file=sys.stdout, flush=True)
 
-    # This is a payout cabinet: a merchant is picked by the currency it pays
+    # This is a payout cabinet: merchants are matched by the currency they pay
     # OUT in, which is to_xml — the one configured in the merchant's settings.
     # from_xml is only what the client paid with and routes nothing.
     payout_xml = data.to_xml
 
     user_repo = UserRepository(session)
     users = await user_repo.get_all()
-    print(f"[deal/create] Total users in system: {len(users)}", file=sys.stdout, flush=True)
+    eligible = [
+        u for u in users
+        if not u.is_banned and payout_xml in {c.xml for c in u.currencies}
+    ]
+    print(f"[deal/create] Merchants paying out in {payout_xml}: {[u.username for u in eligible]}", file=sys.stdout, flush=True)
 
-    deal_user = None
-    for user in users:
-        if user.is_banned:
-            print(f"[deal/create] Skipping banned user {user.id} ({user.username})", file=sys.stdout, flush=True)
-            continue
-        user_currencies = {c.xml for c in user.currencies}
-        print(f"[deal/create] User {user.id} ({user.username}) supports: {user_currencies}", file=sys.stdout, flush=True)
-        if payout_xml in user_currencies:
-            deal_user = user
-            print(f"[deal/create] Matched user {user.id} for payout currency {payout_xml}", file=sys.stdout, flush=True)
-            break
-
-    if not deal_user:
+    if not eligible:
         print(f"[deal/create] ERROR: No user found for payout currency {payout_xml}", file=sys.stdout, flush=True)
         raise HTTPException(status_code=404, detail=f"No user found for payout currency {payout_xml}")
 
-    # Add user_id to deal data
+    # user_id is a required column. With the shared pool it only records the first
+    # eligible merchant at creation time; the merchant who actually handles the
+    # deal is accepted_by.
     data_dict = data.model_dump()
-    data_dict['user_id'] = deal_user.id
+    data_dict['user_id'] = eligible[0].id
     deal_request = DealCreateRequest(**data_dict)
 
-    # The matched merchant's markup for this payout currency goes on top of the
-    # caller's rate. Both are snapshotted on the deal.
-    from decimal import Decimal
-    markup_percent = await user_repo.get_markup(deal_user.id, payout_xml)
-    our_rate = (data.rate * (Decimal(100) + markup_percent) / Decimal(100)).quantize(Decimal("0.00000001"))
-
-    print(f"[deal/create] Creating deal for user {deal_user.id}, uid={data.uid}, rate={data.rate}, markup={markup_percent}%, our_rate={our_rate}", file=sys.stdout, flush=True)
-    deal = await service.create(deal_request, markup_percent=markup_percent, our_rate=our_rate)
-    print(f"[deal/create] Deal created: id={deal.id}, user_id={deal_user.id}", file=sys.stdout, flush=True)
+    deal = await service.create(deal_request)
+    print(f"[deal/create] Deal created: id={deal.id}, rate={data.rate}, visible to {len(eligible)} merchant(s)", file=sys.stdout, flush=True)
 
     session.add(ApiKeyLog(
         username=caller.username,
@@ -118,25 +183,29 @@ async def create_deal(
 
     deal_data = data.model_dump(mode="json")
     deal_data["id"] = deal.id
-    deal_data["user_id"] = deal_user.id
+    deal_data["user_id"] = deal.user_id
     deal_data["received_at"] = deal.received_at.isoformat() + "Z" if deal.received_at else None
     deal_data["accepted_by"] = None
     deal_data["accepted_at"] = None
     deal_data["updated_at"] = None
-    # Merchants only ever see the rate with their markup applied.
+    # Merchants never get the caller's rate, only the rate with their own markup.
     deal_data.pop("rate", None)
-    deal_data["our_rate"] = float(our_rate)
 
-    ws_message = json.dumps({
-        "event": "new_deal",
-        "deal_id": deal.id,
-        "payout_xml": payout_xml,
-        "data": deal_data,
-    })
+    markups = await user_repo.get_markups([u.id for u in eligible])
 
-    # Must use the same currency the merchant was picked by, otherwise a deal
-    # is stored against one merchant and pushed live to a different set of them.
-    await manager.broadcast_to_matching(ws_message, payout_xml)
+    def render(ws_session) -> str:
+        percent = markups.get(ws_session.user_id, {}).get(payout_xml, Decimal(0))
+        our_rate = apply_markup(data.rate, percent)
+        payload = dict(deal_data, our_rate=float(our_rate) if our_rate is not None else None)
+        return json.dumps({
+            "event": "new_deal",
+            "deal_id": deal.id,
+            "payout_xml": payout_xml,
+            "data": payload,
+        })
+
+    # Pushed to every merchant with this payout currency, each at their own rate.
+    await manager.broadcast_to_matching_each(payout_xml, render)
 
     try:
         await redis_service.publish_deal(deal.id, deal_data, payout_xml)
@@ -155,7 +224,8 @@ async def accept_deal(
     try:
         deal = await service.accept(deal_id, user.id)
     except ValueError as e:
-        raise HTTPException(status_code=404 if str(e) == "not_found" else 409)
+        raise _deal_error(e) from e
+    await _announce(deal)
     return {"id": deal.id, "status": deal.status}
 
 
@@ -165,10 +235,13 @@ async def refuse_deal(
     service: DealService = Depends(get_deal_service),
     user: User = Depends(get_current_user),
 ):
+    """Hides the deal from this merchant only; nothing is sent to Bizon."""
     try:
         deal = await service.refuse(deal_id, user.id)
     except ValueError as e:
-        raise HTTPException(status_code=404 if str(e) == "not_found" else 409)
+        raise _deal_error(e) from e
+    # A handed-back deal reappears for the other merchants.
+    await _announce(deal)
     return {"id": deal.id, "status": deal.status}
 
 
@@ -181,14 +254,8 @@ async def complete_deal(
     try:
         deal = await service.complete(deal_id, user.id)
     except ValueError as e:
-        if str(e) == "not_found":
-            raise HTTPException(status_code=404, detail="Deal not found")
-        if str(e) == "no_rate":
-            raise HTTPException(
-                status_code=409,
-                detail="Deal has no rate, so the USDT amount for the balance can't be computed",
-            )
-        raise HTTPException(status_code=409)
+        raise _deal_error(e) from e
+    await _announce(deal)
     return {"id": deal.id, "status": deal.status}
 
 
@@ -202,6 +269,12 @@ async def update_deal_status(
     from sqlalchemy import select
     from models import Deal
     from schemas import DealStatus
+
+    # Merchants move deals only through accept / refuse / complete, which claim
+    # the deal atomically, fix the markup and sync Bizon. This raw setter
+    # bypasses all of that, so it is admin-only.
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     if status not in {s.value for s in DealStatus}:
         raise HTTPException(status_code=422, detail=f"Unknown status '{status}'")
@@ -219,9 +292,6 @@ async def update_deal_status(
 
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
-
-    if not user.is_admin and user.id not in (deal.user_id, deal.accepted_by):
-        raise HTTPException(status_code=403, detail="Access denied")
 
     if deal.status in ("accepted", "refused"):
         raise HTTPException(
@@ -247,7 +317,9 @@ async def upload_receipt(
     deal = await service.repository.get_by_id(deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
-    if deal.user_id != user.id:
+    # Only the merchant who took the deal pays it out, so only they attach the
+    # receipt. user_id is just the first eligible merchant in the shared pool.
+    if deal.accepted_by != user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
     ext = Path(file.filename or "").suffix.lower()
@@ -302,7 +374,10 @@ async def download_receipt(
     deal = await service.repository.get_by_id(deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
-    if deal.user_id != user.id and not user.is_admin:
+    # The merchant who took the deal; for older deals that were never taken, the
+    # merchant they were created for.
+    holder = deal.accepted_by if deal.accepted_by is not None else deal.user_id
+    if holder != user.id and not user.is_admin:
         raise HTTPException(status_code=403, detail="Access denied")
 
     # The file must be the one actually attached to this deal, so a valid

@@ -13,6 +13,7 @@ import AdminPayouts from './pages/admin/AdminPayouts';
 import AdminDeals from './pages/admin/AdminDeals';
 import AdminLogs from './pages/admin/AdminLogs';
 import DealsHistoryPage from './pages/deals/DealsHistoryPage';
+import HistoryPage from './pages/history/HistoryPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import DocsPage from './pages/DocsPage';
 
@@ -34,6 +35,7 @@ export default function App() {
             {/* Payout requests are a separate entity from deals; kept reachable
                 for checking the payouts table, but /payout stays on deals. */}
             <Route path="/payouts" element={<PayoutPage />} />
+            <Route path="/history" element={<HistoryPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/" element={<Navigate to="/payout" replace />} />
           </Route>

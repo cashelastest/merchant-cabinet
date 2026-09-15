@@ -73,7 +73,41 @@
     "status_label": {
       "accepted": "COMPLETED",
       "refused": "REJECTED"
-    }
+    },
+    "tabs": {
+      "deals": "Requests",
+      "balance": "Balance history"
+    },
+    "totals": {
+      "all_time": "All time",
+      "count": "Requests",
+      "success": "Successful",
+      "refused": "Refused",
+      "paid_out": "Paid out",
+      "credited": "Credited"
+    },
+    "day_table": {
+      "time": "Time",
+      "amount": "Amount",
+      "rate": "Rate",
+      "credited": "Credited, USDT",
+      "recipient": "Recipient",
+      "bank": "Bank",
+      "status": "Status"
+    },
+    "balance": {
+      "date": "Date",
+      "operation": "Operation",
+      "amount": "Amount, USDT",
+      "details": "Details"
+    },
+    "actions": {
+      "deal_accepted": "Deal credit",
+      "reset": "Reset by admin",
+      "payout_completed": "Payout"
+    },
+    "no_date": "No date",
+    "load_error": "Failed to load history"
   },
   "admin": {
     "users": {

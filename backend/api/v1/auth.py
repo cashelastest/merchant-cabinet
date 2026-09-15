@@ -80,6 +80,32 @@ async def me(
     }
 
 
+@router.get("/me/balance-history")
+async def my_balance_history(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Balance movements of the current merchant, in USDT, newest first."""
+    from sqlalchemy import select
+    from models import BalanceHistory
+
+    result = await session.execute(
+        select(BalanceHistory)
+        .where(BalanceHistory.user_id == user.id)
+        .order_by(BalanceHistory.created_at.desc())
+    )
+    return [
+        {
+            "id": h.id,
+            "action": h.action,
+            "amount": h.amount,
+            "reason": h.reason,
+            "created_at": h.created_at.isoformat() if h.created_at else None,
+        }
+        for h in result.scalars().all()
+    ]
+
+
 @router.patch("/me/status")
 async def update_status(
     data: StatusUpdate,

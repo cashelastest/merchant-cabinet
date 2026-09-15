@@ -107,6 +107,10 @@ export default function DealsPage() {
               if (prev.some((d) => d.id === newDeal.id)) return prev;
               return [newDeal, ...prev];
             });
+          } else if (payload.event === 'deal_updated') {
+            // A deal from the shared pool was taken or closed. Only the server
+            // knows which deals this merchant may still see, so re-sync the list.
+            window.dispatchEvent(new Event('deals:refresh'));
           }
         } catch {/* ignore */}
       };
@@ -155,11 +159,18 @@ export default function DealsPage() {
         next === 'in_progress' ? await acceptDeal(deal.id) :
         next === 'accepted'    ? await completeDeal(deal.id) :
                                  await refuseDeal(deal.id);
-      setDeals((prev) => prev.map((d) => d.id === deal.id ? { ...d, status: res.status } : d));
+      if (next === 'refused') {
+        // Refusing only hides the deal from this merchant; everyone else still sees it.
+        setDeals((prev) => prev.filter((d) => d.id !== deal.id));
+      } else {
+        setDeals((prev) => prev.map((d) => d.id === deal.id ? { ...d, status: res.status } : d));
+      }
     } catch (e) {
       // Show the server's reason, e.g. a deal that has no rate to settle with.
       const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
       alert(typeof detail === 'string' ? detail : 'Failed to update status');
+      // Another merchant may have taken the deal in the meantime; re-sync the list.
+      fetchDeals();
     } finally {
       setActioningId(null);
     }

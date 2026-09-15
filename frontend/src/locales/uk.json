@@ -73,7 +73,41 @@
     "status_label": {
       "accepted": "ВИКОНАНА",
       "refused": "ВІДХИЛЕНА"
-    }
+    },
+    "tabs": {
+      "deals": "Заявки",
+      "balance": "Історія балансу"
+    },
+    "totals": {
+      "all_time": "Разом за весь час",
+      "count": "Заявок",
+      "success": "Успішно",
+      "refused": "Відхилено",
+      "paid_out": "Виплачено",
+      "credited": "Зараховано"
+    },
+    "day_table": {
+      "time": "Час",
+      "amount": "Сума",
+      "rate": "Курс",
+      "credited": "Зараховано, USDT",
+      "recipient": "Отримувач",
+      "bank": "Банк",
+      "status": "Статус"
+    },
+    "balance": {
+      "date": "Дата",
+      "operation": "Операція",
+      "amount": "Сума, USDT",
+      "details": "Деталі"
+    },
+    "actions": {
+      "deal_accepted": "Зарахування за заявкою",
+      "reset": "Обнулення адміністратором",
+      "payout_completed": "Виплата"
+    },
+    "no_date": "Без дати",
+    "load_error": "Не вдалося завантажити історію"
   },
   "admin": {
     "users": {

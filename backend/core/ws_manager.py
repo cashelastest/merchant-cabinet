@@ -2,6 +2,7 @@
 
 from fastapi import WebSocket
 from dataclasses import dataclass
+from typing import Callable
 
 
 @dataclass
@@ -58,12 +59,31 @@ class ConnectionManager:
             if session.user_id == user_id:
                 session.xml_codes = set(xml_codes)
 
+    @staticmethod
+    def _matches(session: WsSession, payout_xml: str) -> bool:
+        # Active merchants paying out in this currency, or any admin
+        return session.is_admin or (session.is_active and payout_xml in session.xml_codes)
+
     async def broadcast_to_matching(self, message: str, payout_xml: str) -> None:
         for ws, session in list(self._connections.items()):
-            # Send to active merchants paying out in this currency, or to all admins
-            if session.is_admin or (session.is_active and payout_xml in session.xml_codes):
+            if self._matches(session, payout_xml):
                 try:
                     await ws.send_text(message)
+                except Exception:
+                    self._connections.pop(ws, None)
+
+    async def broadcast_to_matching_each(
+        self, payout_xml: str, render: Callable[[WsSession], str]
+    ) -> None:
+        """Like broadcast_to_matching, but builds the message per recipient.
+
+        For payloads that differ between merchants — each one sees the rate with
+        their own markup applied.
+        """
+        for ws, session in list(self._connections.items()):
+            if self._matches(session, payout_xml):
+                try:
+                    await ws.send_text(render(session))
                 except Exception:
                     self._connections.pop(ws, None)
 

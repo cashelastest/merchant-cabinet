@@ -12,6 +12,13 @@ interface BalanceHistoryItem {
   created_at: string;
 }
 
+/** The merchant whose page this is — not the admin viewing it. */
+interface UserProfile {
+  id: number;
+  username: string;
+  balance: number;
+}
+
 interface HistoryDeal {
   id: number;
   uid: number;
@@ -25,6 +32,7 @@ interface HistoryDeal {
   credited_usdt: number | null;
   margin_usdt: number | null;
   receipt_url: string | null;
+  updated_at: string | null;
   received_at: string | null;
   created_at: string | null;
 }
@@ -48,9 +56,11 @@ interface DaySection extends Totals {
 
 const toDate = (iso: string) => new Date(iso + (iso.endsWith('Z') ? '' : 'Z'));
 
-// Deals are grouped by when the cabinet received them. created_at is set by the
-// API caller and can hold any date; received_at is stamped by the server.
-const dealTime = (d: HistoryDeal) => d.received_at ?? d.created_at;
+// A deal belongs to the day it was finished (updated_at is set on completion and
+// refusal), so a day's sums match what hit the balance that day — the same rule
+// as the merchant's own history. Open deals fall back to arrival; created_at is
+// set by the API caller, so it comes last.
+const dealTime = (d: HistoryDeal) => d.updated_at ?? d.received_at ?? d.created_at;
 
 function amountOf(d: HistoryDeal): number {
   const n = Number(d.to_values?.outAmount);
@@ -138,6 +148,7 @@ export default function DealsHistoryPage() {
   const navigate = useNavigate();
   const [deals, setDeals] = useState<HistoryDeal[]>([]);
   const [balanceHistory, setBalanceHistory] = useState<BalanceHistoryItem[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'deals' | 'balance'>('deals');
 
@@ -154,12 +165,16 @@ export default function DealsHistoryPage() {
 
   const fetchUserHistory = async () => {
     try {
-      const [dealsData, balanceData] = await Promise.all([
+      const [dealsData, balanceData, profileData] = await Promise.all([
         adminClient.get<HistoryDeal[]>(`/admin/deals/${userId}`).then((r) => r.data),
         adminClient.get<BalanceHistoryItem[]>(`/admin/users/${userId}/balance-history`).then((r) => r.data),
+        // The merchant's own balance, fetched by the id in the URL — not the
+        // balance of the admin who is looking at the page.
+        adminClient.get<UserProfile>(`/admin/users/${userId}`).then((r) => r.data),
       ]);
       setDeals(dealsData);
       setBalanceHistory(balanceData);
+      setProfile(profileData);
     } catch {
       alert('Failed to load history');
     } finally {
@@ -220,8 +235,21 @@ export default function DealsHistoryPage() {
         }}>
           ← Вернуться к пользователям
         </button>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 className={styles.pageTitle}>История пользователя (User #{userId})</h1>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          gap: '16px', flexWrap: 'wrap',
+        }}>
+          <div>
+            <h1 className={styles.pageTitle}>
+              История пользователя {profile ? profile.username : ''} (User #{userId})
+            </h1>
+            <div style={{ marginTop: '6px', fontSize: '14px', color: '#888' }}>
+              Текущий баланс:{' '}
+              <b style={{ color: '#4ade80', fontSize: '18px' }}>
+                {profile ? `${money(Number(profile.balance))} USDT` : '—'}
+              </b>
+            </div>
+          </div>
           <button
             onClick={handleResetBalance}
             style={{

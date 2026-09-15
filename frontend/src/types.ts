@@ -37,6 +37,18 @@ export interface Deal {
   receipt_url?: string | null;
   /** Caller's rate with the merchant's markup applied */
   our_rate?: number | null;
+  /** USDT credited to the merchant's balance when the deal was completed */
+  credited_usdt?: number | null;
+}
+
+export interface BalanceHistoryItem {
+  id: number;
+  /** deal_accepted | reset | payout_completed */
+  action: string;
+  /** In USDT. For "reset" this is the balance that was wiped, stored as positive. */
+  amount: number;
+  reason: string;
+  created_at: string | null;
 }
 
 export interface TokenResponse {

@@ -5,3 +5,4 @@ from .payout import Payout
 from .api_key_log import ApiKeyLog
 from .balance_history import BalanceHistory
 from .user_currency_markup import UserCurrencyMarkup
+from .deal_refusal import DealRefusal
